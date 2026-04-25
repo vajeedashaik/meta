@@ -1,0 +1,87 @@
+{
+  "mumbai_gen_z": {
+    "valid_refs": [
+      "Bandra", "CSMT", "dabba", "auto", "local train", "startup scene",
+      "Zomato", "Swiggy", "IPL", "sea link", "Juhu", "Versova", "Aarey",
+      "SoBo", "Powai", "Andheri", "Dharavi", "Bandstand", "Colaba",
+      "Bollywood 2020s"
+    ],
+    "invalid_signals": [
+      "trunk call", "STD booth", "pager", "cassette", "VHS", "walkman",
+      "disco", "beeper", "doordarshan only", "telegram boy",
+      "ration card queue", "old delhi", "tonga", "coolie",
+      "chawl gossip pre-2000"
+    ],
+    "correct_idioms": [
+      "ek dum solid", "full on", "kya scene hai", "bindaas", "jugaad nahi",
+      "yaar sun", "bhai chill maar", "ekdum mast", "kya baat hai",
+      "ekdum lit", "arey yaar", "full on vibe", "kya scene hai bhai",
+      "timepass nahi", "mast hai re", "solid plan", "chal be"
+    ],
+    "anachronistic_signals": []
+  },
+  "tier2_hindi_belt": {
+    "valid_refs": [
+      "kirana store", "mandap", "jugaad", "sabzi mandi", "panchayat",
+      "mela", "dal-chawal", "halwai", "tehsil", "chaupal", "gaon",
+      "kheti", "bori", "dhaba", "cycle", "tubewell", "Kanpur",
+      "Lucknow", "Patna", "Varanasi"
+    ],
+    "invalid_signals": [
+      "unicorn startup", "runway", "pivot", "SaaS", "venture capital",
+      "IPO", "fintech", "coworking space", "metro commute", "craft beer",
+      "avocado toast", "brunch", "penthouse", "valet parking",
+      "rooftop lounge", "angel investor", "Series A", "growth hacking",
+      "disruptive"
+    ],
+    "correct_idioms": [
+      "bilkul sahi", "arey bhai", "baat pakki", "suno ji", "haan ji",
+      "seedha baat", "desi style", "apna kaam", "ek number",
+      "bahut badhiya", "kya baat", "sahi mein", "dhamaal", "arre wah",
+      "mast jugaad", "thoda adjust karo", "kal milte hain"
+    ],
+    "anachronistic_signals": []
+  },
+  "pan_india_english": {
+    "valid_refs": [
+      "India", "Indian", "subcontinent", "festivals", "cricket", "desi",
+      "masala", "biryani", "chai", "temple", "monsoon", "Diwali",
+      "Holi", "market", "college"
+    ],
+    "invalid_signals": [
+      "kachcha road", "pind", "naali", "akhada", "maidan ke paas",
+      "chakki", "chulha", "dung cake", "lathicharge", "tehsildar",
+      "patwari", "sarpanch only", "gaon waale", "pradhan ji", "khet mein"
+    ],
+    "correct_idioms": [
+      "absolutely", "for sure", "totally agree", "makes sense",
+      "of course", "right", "exactly", "fair point", "well said",
+      "spot on", "valid point", "true that", "no doubt", "solid",
+      "good point", "great insight", "well done"
+    ],
+    "anachronistic_signals": []
+  },
+  "hinglish": {
+    "valid_refs": [
+      "yaar", "bhai", "dost", "scene", "vibe", "timepass", "jugaad",
+      "mast", "bindaas", "desi", "ekdum", "kal", "aaj", "kya", "kaise"
+    ],
+    "invalid_signals": [
+      "I am going to the marketplace", "Please be advised", "Pursuant to",
+      "Herewith", "As per our discussion", "In reference to",
+      "Kindly note", "I beg to inform", "With due respect",
+      "at your earliest convenience", "enclosed herewith",
+      "please find attached", "as discussed", "further to my email",
+      "I hope this email finds you"
+    ],
+    "correct_idioms": [
+      "yaar sun", "bhai ekdum", "kya baat hai", "arey chill maar",
+      "solid plan hai", "mast scene hai", "full on enjoy",
+      "ekdum bindaas", "bhai sahi bol raha hai", "kya jugaad lagaya",
+      "ek dum mast", "timepass nahi yaar", "kya vibe hai",
+      "full on mast", "ekdum sahi", "arey yaar kya scene",
+      "bas ek chance"
+    ],
+    "anachronistic_signals": []
+  }
+}

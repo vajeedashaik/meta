@@ -8,59 +8,59 @@
       {
         "claim_id": "C1",
         "critique_class": "hook_weakness",
-        "claim_text": "The hook at 0:00-0:10 promises a life-changing secret but delays its reveal until 0:45, by which time some viewers may have lost interest",
-        "timestamp_range": "0:00-0:10",
-        "evidence": "Okay so real talk \u00e2\u20ac\u201d I've been broke my whole life. Like actually broke. Not the aesthetic broke, the can't-pay-rent broke. And then one day I found this one trick that changed everything.",
+        "claim_text": "The hook promises a life-changing trick but takes 0:22 seconds to reveal, by which time viewers might have lost interest",
+        "timestamp_range": "0:00-0:03",
+        "evidence": "I've been broke my whole life. Like actually broke. Not the aesthetic broke, the can't-pay-rent broke. And then one day I found this one trick that changed everything.",
         "is_falsifiable": true,
         "severity": "medium"
       },
       {
         "claim_id": "C2",
         "critique_class": "pacing_issue",
-        "claim_text": "The script spends 15 seconds showing off the apartment at 0:20-0:35, which may slow down the narrative and cause some viewers to lose interest",
-        "timestamp_range": "0:20-0:35",
-        "evidence": "But first, let me show you my apartment. Pretty nice right? Took me three years to get here.",
+        "claim_text": "The script switches abruptly from the personal story to a promotional message at 0:45, disrupting the narrative flow",
+        "timestamp_range": "0:45-0:55",
+        "evidence": "The secret? Mutual funds. Just SIPs. I'm serious.",
         "is_falsifiable": true,
-        "severity": "low"
+        "severity": "high"
       },
       {
         "claim_id": "C3",
-        "critique_class": "coherence_break",
-        "claim_text": "The transition from 'I've been broke my whole life' to 'my apartment is pretty nice' at 0:10-0:20 is abrupt and may confuse some viewers",
-        "timestamp_range": "0:10-0:20",
-        "evidence": "Like actually broke. Not the aesthetic broke, the can't-pay-rent broke. And then one day I found this one trick that changed everything. But first, let me show you my apartment.",
+        "critique_class": "cta_buried",
+        "claim_text": "The call-to-action to follow the creator for the list of funds is buried at the end of the script and might be missed by viewers",
+        "timestamp_range": "1:10-1:15",
+        "evidence": "If you want to know which funds I use, follow me and I'll post the list tomorrow.",
         "is_falsifiable": true,
         "severity": "medium"
       },
       {
         "claim_id": "C4",
-        "critique_class": "cta_buried",
-        "claim_text": "The call-to-action to follow the creator for more information is buried at the end of the script at 1:00-1:05 and may be missed by viewers who don't watch until the end",
-        "timestamp_range": "1:00-1:05",
+        "critique_class": "retention_risk",
+        "claim_text": "The script assumes viewers will wait for the next day's post for the list of funds, which might lead to a drop in retention",
+        "timestamp_range": "1:10-1:15",
         "evidence": "If you want to know which funds I use, follow me and I'll post the list tomorrow.",
         "is_falsifiable": true,
         "severity": "high"
       },
       {
         "claim_id": "C5",
-        "critique_class": "retention_risk",
-        "claim_text": "The script assumes the viewer is familiar with mutual funds and SIPs at 0:40-0:50, which may cause some viewers to feel lost or disconnected from the content",
-        "timestamp_range": "0:40-0:50",
-        "evidence": "The secret? Mutual funds. Just SIPs.",
+        "critique_class": "coherence_break",
+        "claim_text": "The script's tone shifts from relatable and personal to overly promotional and sales-y, potentially alienating the target audience",
+        "timestamp_range": "N/A",
+        "evidence": "The entire script's tone and language",
         "is_falsifiable": true,
         "severity": "medium"
       },
       {
         "claim_id": "C6",
-        "critique_class": "cultural_mismatch",
-        "claim_text": "The script uses a very casual tone at 0:00-0:10, which may not resonate with all viewers in the target region, particularly those who prefer more formal or professional content",
-        "timestamp_range": "0:00-0:10",
-        "evidence": "Okay so real talk \u00e2\u20ac\u201d I've been broke my whole life.",
+        "critique_class": "pacing_issue",
+        "claim_text": "The script tries to cram too much information and calls-to-action in the last 10 seconds, which might overwhelm viewers",
+        "timestamp_range": "1:15-1:20",
+        "evidence": "Like and save this video before Instagram hides it.",
         "is_falsifiable": true,
-        "severity": "low"
+        "severity": "high"
       }
     ],
-    "overall_severity": "medium",
-    "raw_response": "{\n  \"claims\": [\n    {\n      \"claim_id\": \"C1\",\n      \"critique_class\": \"hook_weakness\",\n      \"claim_text\": \"The hook at 0:00-0:10 promises a life-changing secret but delays its reveal until 0:45, by which time some viewers may have lost interest\",\n      \"timestamp_range\": \"0:00-0:10\",\n      \"evidence\": \"Okay so real talk \u00e2\u20ac\u201d I've been broke my whole life. Like actually broke. Not the aesthetic broke, the can't-pay-rent broke. And then one day I found this one trick that changed everything.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C2\",\n      \"critique_class\": \"pacing_issue\",\n      \"claim_text\": \"The script spends 15 seconds showing off the apartment at 0:20-0:35, which may slow down the narrative and cause some viewers to lose interest\",\n      \"timestamp_range\": \"0:20-0:35\",\n      \"evidence\": \"But first, let me show you my apartment. Pretty nice right? Took me three years to get here.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"low\"\n    },\n    {\n      \"claim_id\": \"C3\",\n      \"critique_class\": \"coherence_break\",\n      \"claim_text\": \"The transition from 'I've been broke my whole life' to 'my apartment is pretty nice' at 0:10-0:20 is abrupt and may confuse some viewers\",\n      \"timestamp_range\": \"0:10-0:20\",\n      \"evidence\": \"Like actually broke. Not the aesthetic broke, the can't-pay-rent broke. And then one day I found this one trick that changed everything. But first, let me show you my apartment.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C4\",\n      \"critique_class\": \"cta_buried\",\n      \"claim_text\": \"The call-to-action to follow the creator for more information is buried at the end of the script at 1:00-1:05 and may be missed by viewers who don't watch until the end\",\n      \"timestamp_range\": \"1:00-1:05\",\n      \"evidence\": \"If you want to know which funds I use, follow me and I'll post the list tomorrow.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"high\"\n    },\n    {\n      \"claim_id\": \"C5\",\n      \"critique_class\": \"retention_risk\",\n      \"claim_text\": \"The script assumes the viewer is familiar with mutual funds and SIPs at 0:40-0:50, which may cause some viewers to feel lost or disconnected from the content\",\n      \"timestamp_range\": \"0:40-0:50\",\n      \"evidence\": \"The secret? Mutual funds. Just SIPs.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C6\",\n      \"critique_class\": \"cultural_mismatch\",\n      \"claim_text\": \"The script uses a very casual tone at 0:00-0:10, which may not resonate with all viewers in the target region, particularly those who prefer more formal or professional content\",\n      \"timestamp_range\": \"0:00-0:10\",\n      \"evidence\": \"Okay so real talk \u00e2\u20ac\u201d I've been broke my whole life.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"low\"\n    }\n  ],\n  \"overall_severity\": \"medium\"\n}"
+    "overall_severity": "high",
+    "raw_response": "{\n  \"claims\": [\n    {\n      \"claim_id\": \"C1\",\n      \"critique_class\": \"hook_weakness\",\n      \"claim_text\": \"The hook promises a life-changing trick but takes 0:22 seconds to reveal, by which time viewers might have lost interest\",\n      \"timestamp_range\": \"0:00-0:03\",\n      \"evidence\": \"I've been broke my whole life. Like actually broke. Not the aesthetic broke, the can't-pay-rent broke. And then one day I found this one trick that changed everything.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C2\",\n      \"critique_class\": \"pacing_issue\",\n      \"claim_text\": \"The script switches abruptly from the personal story to a promotional message at 0:45, disrupting the narrative flow\",\n      \"timestamp_range\": \"0:45-0:55\",\n      \"evidence\": \"The secret? Mutual funds. Just SIPs. I'm serious.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"high\"\n    },\n    {\n      \"claim_id\": \"C3\",\n      \"critique_class\": \"cta_buried\",\n      \"claim_text\": \"The call-to-action to follow the creator for the list of funds is buried at the end of the script and might be missed by viewers\",\n      \"timestamp_range\": \"1:10-1:15\",\n      \"evidence\": \"If you want to know which funds I use, follow me and I'll post the list tomorrow.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C4\",\n      \"critique_class\": \"retention_risk\",\n      \"claim_text\": \"The script assumes viewers will wait for the next day's post for the list of funds, which might lead to a drop in retention\",\n      \"timestamp_range\": \"1:10-1:15\",\n      \"evidence\": \"If you want to know which funds I use, follow me and I'll post the list tomorrow.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"high\"\n    },\n    {\n      \"claim_id\": \"C5\",\n      \"critique_class\": \"coherence_break\",\n      \"claim_text\": \"The script's tone shifts from relatable and personal to overly promotional and sales-y, potentially alienating the target audience\",\n      \"timestamp_range\": \"N/A\",\n      \"evidence\": \"The entire script's tone and language\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C6\",\n      \"critique_class\": \"pacing_issue\",\n      \"claim_text\": \"The script tries to cram too much information and calls-to-action in the last 10 seconds, which might overwhelm viewers\",\n      \"timestamp_range\": \"1:15-1:20\",\n      \"evidence\": \"Like and save this video before Instagram hides it.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"high\"\n    }\n  ],\n  \"overall_severity\": \"high\"\n}"
   }
 }

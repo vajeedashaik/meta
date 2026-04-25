@@ -93,7 +93,7 @@ def test_aggregator_catastrophic_drop(aggregator):
     start = RewardComponents(r1_hook_strength=0.8, r2_coherence=0.7)
     start.compute_total()
     current = RewardComponents(r1_hook_strength=0.3, r2_coherence=0.7)
-    result = aggregator.compute(current, start, [ActionType.HOOK_REWRITE])
+    result, log = aggregator.compute(current, start, [ActionType.HOOK_REWRITE])
     assert result.total == 0.0
 
 
@@ -102,7 +102,7 @@ def test_aggregator_diversity_penalty(aggregator):
     start.compute_total()
     current = RewardComponents(r1_hook_strength=0.7, r2_coherence=0.7)
     history = [ActionType.HOOK_REWRITE, ActionType.HOOK_REWRITE, ActionType.HOOK_REWRITE]
-    result = aggregator.compute(current, start, history)
+    result, log = aggregator.compute(current, start, history)
     assert result.anti_gaming_penalty == 0.15
     assert result.total < 0.7
 
@@ -112,6 +112,6 @@ def test_aggregator_no_penalty(aggregator):
     start.compute_total()
     current = RewardComponents(r1_hook_strength=0.7, r2_coherence=0.7)
     history = [ActionType.HOOK_REWRITE, ActionType.CTA_PLACEMENT, ActionType.SECTION_REORDER]
-    result = aggregator.compute(current, start, history)
+    result, log = aggregator.compute(current, start, history)
     assert result.anti_gaming_penalty == 0.0
     assert result.total > 0
