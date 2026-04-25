@@ -1,0 +1,66 @@
+{
+  "script_id": "S02",
+  "region": "Mumbai Gen Z",
+  "platform": "Reels",
+  "niche": "fashion",
+  "critique": {
+    "claims": [
+      {
+        "claim_id": "C1",
+        "critique_class": "hook_weakness",
+        "claim_text": "The hook at 0:00-0:03 promises five outfits for one thousand rupees, but the reveal at 2:04-2:10 shows the total cost is five hundred rupees, which may be confusing for viewers who were expecting to see how to create outfits for one thousand rupees",
+        "timestamp_range": "0:00-0:03, 2:04-2:10",
+        "evidence": "Five outfits, one thousand rupees. ... Grand total \u00e2\u20ac\u201d five hundred rupees for five outfits.",
+        "is_falsifiable": true,
+        "severity": "medium"
+      },
+      {
+        "claim_id": "C2",
+        "critique_class": "pacing_issue",
+        "claim_text": "The script at 0:44-0:56 has a pacing issue where the creator says 'wait I need to find it. Okay found it.' which disrupts the flow of showcasing outfits",
+        "timestamp_range": "0:44-0:56",
+        "evidence": "Outfit three \u00e2\u20ac\u201d wait I need to find it. Okay found it.",
+        "is_falsifiable": true,
+        "severity": "low"
+      },
+      {
+        "claim_id": "C3",
+        "critique_class": "retention_risk",
+        "claim_text": "The script at 2:20-2:30 has a retention risk where the creator asks viewers to comment their city, which may not be engaging enough to retain viewers' interest",
+        "timestamp_range": "2:20-2:30",
+        "evidence": "Comment your city and I'll do a version for your local markets.",
+        "is_falsifiable": true,
+        "severity": "medium"
+      },
+      {
+        "claim_id": "C4",
+        "critique_class": "coherence_break",
+        "claim_text": "The script at 1:46-1:54 has a coherence break where the creator abruptly shifts from showcasing outfits to talking about a saree drape tutorial",
+        "timestamp_range": "1:46-1:54",
+        "evidence": "Outfit five \u00e2\u20ac\u201d this entire saree drape tutorial took me two hours",
+        "is_falsifiable": true,
+        "severity": "high"
+      },
+      {
+        "claim_id": "C5",
+        "critique_class": "cta_buried",
+        "claim_text": "The script buries the call-to-action at 2:20-2:30, where the creator asks viewers to comment their city, but it's not prominent enough",
+        "timestamp_range": "2:20-2:30",
+        "evidence": "Comment your city and I'll do a version for your local markets.",
+        "is_falsifiable": true,
+        "severity": "medium"
+      },
+      {
+        "claim_id": "C6",
+        "critique_class": "cultural_mismatch",
+        "claim_text": "The script assumes all viewers are familiar with Mumbai-based markets like Linking Road and Sarojini Nagar, which may not be relatable to viewers from other regions",
+        "timestamp_range": "N/A",
+        "evidence": "Linking Road, Sarojini Nagar",
+        "is_falsifiable": true,
+        "severity": "low"
+      }
+    ],
+    "overall_severity": "medium",
+    "raw_response": "{\n  \"claims\": [\n    {\n      \"claim_id\": \"C1\",\n      \"critique_class\": \"hook_weakness\",\n      \"claim_text\": \"The hook at 0:00-0:03 promises five outfits for one thousand rupees, but the reveal at 2:04-2:10 shows the total cost is five hundred rupees, which may be confusing for viewers who were expecting to see how to create outfits for one thousand rupees\",\n      \"timestamp_range\": \"0:00-0:03, 2:04-2:10\",\n      \"evidence\": \"Five outfits, one thousand rupees. ... Grand total \u00e2\u20ac\u201d five hundred rupees for five outfits.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C2\",\n      \"critique_class\": \"pacing_issue\",\n      \"claim_text\": \"The script at 0:44-0:56 has a pacing issue where the creator says 'wait I need to find it. Okay found it.' which disrupts the flow of showcasing outfits\",\n      \"timestamp_range\": \"0:44-0:56\",\n      \"evidence\": \"Outfit three \u00e2\u20ac\u201d wait I need to find it. Okay found it.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"low\"\n    },\n    {\n      \"claim_id\": \"C3\",\n      \"critique_class\": \"retention_risk\",\n      \"claim_text\": \"The script at 2:20-2:30 has a retention risk where the creator asks viewers to comment their city, which may not be engaging enough to retain viewers' interest\",\n      \"timestamp_range\": \"2:20-2:30\",\n      \"evidence\": \"Comment your city and I'll do a version for your local markets.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C4\",\n      \"critique_class\": \"coherence_break\",\n      \"claim_text\": \"The script at 1:46-1:54 has a coherence break where the creator abruptly shifts from showcasing outfits to talking about a saree drape tutorial\",\n      \"timestamp_range\": \"1:46-1:54\",\n      \"evidence\": \"Outfit five \u00e2\u20ac\u201d this entire saree drape tutorial took me two hours\",\n      \"is_falsifiable\": true,\n      \"severity\": \"high\"\n    },\n    {\n      \"claim_id\": \"C5\",\n      \"critique_class\": \"cta_buried\",\n      \"claim_text\": \"The script buries the call-to-action at 2:20-2:30, where the creator asks viewers to comment their city, but it's not prominent enough\",\n      \"timestamp_range\": \"2:20-2:30\",\n      \"evidence\": \"Comment your city and I'll do a version for your local markets.\",\n      \"is_falsifiable\": true,\n      \"severity\": \"medium\"\n    },\n    {\n      \"claim_id\": \"C6\",\n      \"critique_class\": \"cultural_mismatch\",\n      \"claim_text\": \"The script assumes all viewers are familiar with Mumbai-based markets like Linking Road and Sarojini Nagar, which may not be relatable to viewers from other regions\",\n      \"timestamp_range\": \"N/A\",\n      \"evidence\": \"Linking Road, Sarojini Nagar\",\n      \"is_falsifiable\": true,\n      \"severity\": \"low\"\n    }\n  ],\n  \"overall_severity\": \"medium\"\n}"
+  }
+}
