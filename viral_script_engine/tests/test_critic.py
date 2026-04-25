@@ -87,3 +87,24 @@ def test_evaluator_fails_low_specificity():
     evaluator = CriticEvaluator()
     result = evaluator.evaluate(output, SCRIPT_TEXT)
     assert result.passes_gate is False
+
+
+# ── Task 5: CLI exit-code test ────────────────────────────────────────────────
+
+import os
+import subprocess
+import sys
+
+
+def test_cli_dry_run_exits_zero_or_one():
+    """CLI must exit 0 (pass) or 1 (fail) — never crash with unhandled exception."""
+    result = subprocess.run(
+        [sys.executable, "scripts/run_critic_gate.py", "--dry-run"],
+        capture_output=True,
+        text=True,
+        cwd=str(__import__("pathlib").Path(__file__).parent.parent),
+        env={**os.environ, "ANTHROPIC_API_KEY": "sk-fake-key-for-test"},
+    )
+    assert result.returncode in (0, 1), (
+        f"Unexpected exit code: {result.returncode}\nSTDERR: {result.stderr}"
+    )
