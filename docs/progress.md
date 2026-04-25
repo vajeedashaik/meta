@@ -54,11 +54,18 @@ Do not read entire codebase to understand progress — read this file.
 ✅ logs/escalation_progression.json — per-episode and aggregate progression data
 ✅ Phase 4 gate — PHASE 4 GATE: PASS printed, 10 episodes error-free
 
-## Phase 5 — [Pending]
-⏳ Full GRPO training — needs GPU compute credits
-
-## Phase 5 — [Pending]
-⏳ [feature name] — [one line description]
+## Phase 5 — HF Deployment + Demo Infrastructure
+✅ openenv.yaml — OpenEnv manifest at project root
+✅ app.py — FastAPI HTTP server exposing env as OpenEnv-compliant API, port 7860
+✅ Dockerfile — HuggingFace Spaces-ready container
+✅ demo/run_demo.py — 5-act rich terminal demo, --compare and --interactive modes
+✅ README.md — full hackathon README with all required sections
+✅ notebooks/training_colab.ipynb — 10-cell Colab training notebook
+✅ scripts/submission_check.py — 10-check gate script, all PASS
+✅ logs/training_vs_baseline.png — synthetic comparison plot (replace with real after GRPO)
+✅ r2_coherence.py — rewritten to TF-IDF cosine sim (pyarrow DLL workaround)
+✅ r5_defender_preservation.py — rewritten to TF-IDF cosine sim (pyarrow DLL workaround)
+✅ Phase 5 gate — submission_check 10/10 PASS, demo runs end-to-end
 
 ## Phase 6 — [Pending]
 ⏳ [feature name] — [one line description]

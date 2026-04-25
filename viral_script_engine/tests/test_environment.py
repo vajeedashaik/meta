@@ -96,7 +96,7 @@ def env():
         mock_r5_cls.return_value = mock_r5
 
         from viral_script_engine.environment.env import ViralScriptEnv
-        yield ViralScriptEnv(scripts_path=SCRIPTS_PATH, max_steps=5, difficulty="easy")
+        yield ViralScriptEnv(scripts_path=SCRIPTS_PATH, max_steps=5, difficulty="easy", use_escalation=False)
 
 
 def test_reset_returns_valid_observation(env):

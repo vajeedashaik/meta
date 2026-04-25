@@ -20,21 +20,6 @@ from rich.console import Console
 load_dotenv()
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# Patch sentence_transformers-dependent rewards before import to avoid
-# pyarrow DLL block on Windows (known blocker documented in session/context.md).
-from viral_script_engine.rewards import r2_coherence, r5_defender_preservation
-from viral_script_engine.rewards.r2_coherence import CoherenceRewardResult
-from viral_script_engine.rewards.r5_defender_preservation import DefenderPreservationResult
-
-def _r2_stub(self, original, rewritten):
-    return CoherenceRewardResult(score=0.70, raw_similarity=0.82, interpretation="good_coherence")
-
-def _r5_stub(self, defender_output, rewritten_script):
-    return DefenderPreservationResult(score=0.65, max_similarity=0.75, best_matching_sentence="[stub]")
-
-r2_coherence.CoherenceReward.score = _r2_stub
-r5_defender_preservation.DefenderPreservationReward.score = _r5_stub
-
 from viral_script_engine.agents.baseline_arbitrator import BaselineArbitratorAgent
 from viral_script_engine.environment.env import ViralScriptEnv
 from viral_script_engine.escalation.difficulty_tracker import DifficultyTracker

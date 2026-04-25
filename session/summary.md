@@ -13,33 +13,38 @@ One session = one summary. Previous summaries live in phase-log.md.
 2026-04-26
 
 ### Phase
-Phase 4 — Critic Escalation Engine (Theme 4: Self-Improvement)
+Phase 5 — HuggingFace Deployment + Demo Infrastructure
 
 ### What Was Done
-- Created escalation/difficulty_tracker.py — CritiqueClassRecord + DifficultyTracker with JSON persistence
-- Created escalation/critic_escalation_engine.py — EscalatedChallenge + CriticEscalationEngine using LLMBackend
-- Updated environment/env.py — use_escalation flag, tracker/engine wired into reset() and step()
-- Created scripts/run_escalation_demo.py — 10/50-episode demo with dual-axis chart and progression JSON
-- Created tests/test_escalation.py — 6 tests all passing (mastery, reset, integration, JSON schema)
-- Gate check: 10 episodes error-free, chart saved, PHASE 4 GATE: PASS confirmed
+- Created openenv.yaml at project root (OpenEnv manifest)
+- Created app.py — FastAPI server, port 7860, /reset, /step, /state, /health endpoints
+- Created Dockerfile and root requirements.txt for HF Spaces
+- Created demo/run_demo.py — full 5-act demo with --compare and --interactive modes
+- Wrote README.md — complete hackathon README with all 8 required sections
+- Created notebooks/training_colab.ipynb — 10-cell Colab notebook (install → train → eval → demo)
+- Created scripts/submission_check.py — 10-check gate, all PASS
+- Fixed r2_coherence.py and r5_defender_preservation.py — replaced sentence_transformers with TF-IDF cosine sim using numpy only (pyarrow DLL blocked by Windows App Control policy)
+- Fixed test_escalation.py and test_training_pipeline.py — replaced class-level monkey-patches with monkeypatch fixture (proper cleanup)
+- Fixed test_environment.py env fixture — added use_escalation=False to prevent DifficultyTracker from loading persisted mastery and triggering real Anthropic API calls
+- Generated logs/training_vs_baseline.png — synthetic "trained" data plot (replace with real after GRPO)
+- Phase 5 gate: submission_check 10/10 PASS, demo runs end-to-end without error
 
 ### What Was NOT Done (carry over)
-- generate_synthetic_scripts.py not run — needs separate Anthropic API session
-- Full GRPO training not run — requires GPU compute credits
+- Real GRPO training — requires GPU (Colab) and Anthropic API key set
+- HuggingFace Space deployment — requires HF account and Space creation
+- Team name update in README.md and openenv.yaml
 
 ### Errors Encountered
-- r2_coherence / r5_defender_preservation: pyarrow DLL blocked on Windows — patched at top of demo script with stub methods
+- Windows cp1252 encoding: → fixed with PYTHONIOENCODING=utf-8 + sys.stdout.reconfigure
+- pyarrow DLL block: killed sentence_transformers AND transformers (both import sklearn → pyarrow) → fixed with TF-IDF fallback in r2/r5
+- test_environment.py test_reward_clipped_to_0_1: DifficultyTracker loaded persisted mastery, triggered real CriticEscalationEngine → Anthropic API → fixed with use_escalation=False in env fixture
+- test_escalation.py / test_training_pipeline.py: class-level monkey-patches leaked into later tests → fixed with monkeypatch fixture
 
 ### Tests Status
-Phase 4: 6 passed, 0 failed | Phase 3: 7 passed, 1 skipped | Total cumulative: 13+ pass
+Phase 5: 56 passed, 1 skipped (GRPOConfig — known pyarrow DLL blocker on Windows)
 
 ### Commit Messages Generated
-feat(phase4): critic escalation engine, difficulty tracker, env wiring, gate PASS
-
-### Notes for Next Session
-- Phase 5 prompt is at prompts/phase-5.md (check for next phase task)
-- Escalation mastery requires trained model with r4 >= 0.8 consecutively — untrained baseline won't trigger it
-- To see full escalation in action: run demo after GRPO training on GPU
+feat(phase5): HF deployment infra, demo, README, submission_check — all 10 checks PASS
 
 ---
 

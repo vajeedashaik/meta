@@ -248,23 +248,21 @@ def test_plot_training_curves_generates_png():
 # Test 6: Env reset_from_config works correctly
 # ---------------------------------------------------------------------------
 
-def test_env_reset_from_config(dummy_episode_config):
+def test_env_reset_from_config(dummy_episode_config, monkeypatch):
     """ViralScriptEnv.reset_from_config() resets state from a given config."""
     from viral_script_engine.environment.env import ViralScriptEnv
     from viral_script_engine.rewards import r2_coherence, r5_defender_preservation
+    from viral_script_engine.rewards.r2_coherence import CoherenceRewardResult
+    from viral_script_engine.rewards.r5_defender_preservation import DefenderPreservationResult
 
-    class _FakeR2:
-        score = 0.75
-        raw_similarity = 0.85
-        interpretation = "good_coherence"
-
-    class _FakeR5:
-        score = 0.70
-        max_similarity = 0.80
-        best_matching_sentence = "[test mock]"
-
-    r2_coherence.CoherenceReward.score = lambda self, a, b: _FakeR2()
-    r5_defender_preservation.DefenderPreservationReward.score = lambda self, d, s: _FakeR5()
+    monkeypatch.setattr(
+        r2_coherence.CoherenceReward, "score",
+        lambda self, a, b: CoherenceRewardResult(score=0.75, raw_similarity=0.85, interpretation="good_coherence"),
+    )
+    monkeypatch.setattr(
+        r5_defender_preservation.DefenderPreservationReward, "score",
+        lambda self, d, s: DefenderPreservationResult(score=0.70, max_similarity=0.80, best_matching_sentence="[test mock]"),
+    )
 
     env = ViralScriptEnv(
         scripts_path=str(BASE_DIR / "data" / "test_scripts" / "scripts.json"),

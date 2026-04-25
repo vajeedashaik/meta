@@ -130,25 +130,23 @@ def test_escalation_engine_returns_valid_challenge():
 # Test 5: env.reset() uses escalated script when mastery is achieved
 # ---------------------------------------------------------------------------
 
-def test_env_reset_uses_escalated_script_on_mastery(tmp_path, dummy_challenge):
+def test_env_reset_uses_escalated_script_on_mastery(tmp_path, dummy_challenge, monkeypatch):
     """When a class is mastered, env.reset() uses the escalated challenge script."""
     from viral_script_engine.environment.env import ViralScriptEnv
     from viral_script_engine.escalation.difficulty_tracker import DifficultyTracker
     from viral_script_engine.escalation.critic_escalation_engine import CriticEscalationEngine
     from viral_script_engine.rewards import r2_coherence, r5_defender_preservation
+    from viral_script_engine.rewards.r2_coherence import CoherenceRewardResult
+    from viral_script_engine.rewards.r5_defender_preservation import DefenderPreservationResult
 
-    class _FakeR2:
-        score = 0.75
-        raw_similarity = 0.85
-        interpretation = "good_coherence"
-
-    class _FakeR5:
-        score = 0.70
-        max_similarity = 0.80
-        best_matching_sentence = "[mock]"
-
-    r2_coherence.CoherenceReward.score = lambda self, a, b: _FakeR2()
-    r5_defender_preservation.DefenderPreservationReward.score = lambda self, d, s: _FakeR5()
+    monkeypatch.setattr(
+        r2_coherence.CoherenceReward, "score",
+        lambda self, a, b: CoherenceRewardResult(score=0.75, raw_similarity=0.85, interpretation="good_coherence"),
+    )
+    monkeypatch.setattr(
+        r5_defender_preservation.DefenderPreservationReward, "score",
+        lambda self, d, s: DefenderPreservationResult(score=0.70, max_similarity=0.80, best_matching_sentence="[mock]"),
+    )
 
     tracker = DifficultyTracker(persistence_path=str(tmp_path / "tracker.json"))
     for i in range(3):

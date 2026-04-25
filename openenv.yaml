@@ -1,0 +1,33 @@
+name: viral-script-debugging-engine
+version: "1.0.0"
+description: >
+  A multi-agent RL environment where an LLM Arbitrator learns to improve
+  short-form video scripts through adversarial debate. Trains with GRPO via
+  HuggingFace TRL + Unsloth. Hits Theme 1 (Multi-Agent) and Theme 4
+  (Self-Improvement) simultaneously.
+themes:
+  - multi_agent_interactions
+  - self_improvement
+author: "Team Name"
+python_requires: ">=3.10"
+entry_point: viral_script_engine.environment.env:ViralScriptEnv
+reset_method: reset
+step_method: step
+state_method: state
+reward_method: reward
+tools:
+  - name: reset
+    description: "Start a new script improvement episode"
+  - name: step
+    description: "Execute one debate round: Critic attacks, Defender responds, Arbitrator acts, Rewriter executes"
+  - name: state
+    description: "Get current environment state including script, debate history, and reward components"
+dependencies:
+  - anthropic>=0.40.0
+  - sentence-transformers>=2.7.0
+  - unsloth
+  - trl>=0.12.0
+  - numpy>=1.26.0
+  - pydantic>=2.0.0
+  - fastapi>=0.110.0
+  - uvicorn>=0.29.0

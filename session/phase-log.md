@@ -23,6 +23,7 @@ ROLLED BACK — changes reverted, reason in line
 [YYYY-MM-DD] [Phase 1] STARTED — project scaffolding begun
 [2026-04-26] [Phase 3] COMPLETE — curriculum tiers, GRPO pipeline, rollout fn, dry-run gate PASS
 [2026-04-26] [Phase 4] COMPLETE — DifficultyTracker, CriticEscalationEngine, env wiring, 6 tests pass, gate PASS
+[2026-04-26] [Phase 5] COMPLETE — HF deploy infra, demo, README, submission_check 10/10 PASS, demo end-to-end ok
 
 ---
 

@@ -1,5 +1,8 @@
+import re
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Optional
+
+import numpy as np
 
 from viral_script_engine.agents.defender import DefenderOutput
 
@@ -12,40 +15,79 @@ class DefenderPreservationResult:
 
 
 def _sentence_split(text: str) -> List[str]:
-    import re
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     return [s for s in sentences if s.strip()]
 
 
+def _tokenize(text: str) -> List[str]:
+    return re.findall(r"\b\w+\b", text.lower())
+
+
+def _tfidf_vector(tokens: List[str], vocab: Dict[str, int]) -> np.ndarray:
+    vec = np.zeros(len(vocab), dtype=np.float32)
+    for t in tokens:
+        if t in vocab:
+            vec[vocab[t]] += 1
+    total = max(len(tokens), 1)
+    return vec / total
+
+
+def _cosine_np(a: np.ndarray, b: np.ndarray) -> float:
+    n1 = np.linalg.norm(a)
+    n2 = np.linalg.norm(b)
+    if n1 == 0 or n2 == 0:
+        return 0.0 if n1 != n2 else 1.0
+    return float(np.dot(a, b) / (n1 * n2))
+
+
 class DefenderPreservationReward:
-    _model = None
+    _st_model: Optional[object] = None
+    _use_st: Optional[bool] = None
     _cache: dict = {}
 
-    def _get_model(self):
-        if DefenderPreservationReward._model is None:
-            from sentence_transformers import SentenceTransformer
-            DefenderPreservationReward._model = SentenceTransformer("all-MiniLM-L6-v2")
-        return DefenderPreservationReward._model
+    def _try_load_st(self) -> bool:
+        if DefenderPreservationReward._use_st is not None:
+            return DefenderPreservationReward._use_st
+        try:
+            from sentence_transformers import SentenceTransformer  # noqa: F401
+            DefenderPreservationReward._st_model = SentenceTransformer("all-MiniLM-L6-v2")
+            DefenderPreservationReward._use_st = True
+        except Exception:
+            DefenderPreservationReward._use_st = False
+        return DefenderPreservationReward._use_st
 
-    def _embed(self, text: str):
+    def _embed_st(self, text: str):
         import hashlib
         key = hashlib.sha256(text.encode()).hexdigest()
         if key not in DefenderPreservationReward._cache:
-            DefenderPreservationReward._cache[key] = self._get_model().encode(
+            DefenderPreservationReward._cache[key] = DefenderPreservationReward._st_model.encode(
                 text, convert_to_tensor=True
             )
         return DefenderPreservationReward._cache[key]
 
-    def score(self, defender_output: DefenderOutput, rewritten_script: str) -> DefenderPreservationResult:
-        from sentence_transformers.util import cos_sim
+    def _cosine_st(self, a, b) -> float:
+        import torch
+        import torch.nn.functional as F
+        a = a.unsqueeze(0) if a.dim() == 1 else a
+        b = b.unsqueeze(0) if b.dim() == 1 else b
+        return float(F.cosine_similarity(a, b))
 
-        quote_emb = self._embed(defender_output.core_strength_quote)
+    def _similarity(self, text1: str, text2: str) -> float:
+        if self._try_load_st():
+            return self._cosine_st(self._embed_st(text1), self._embed_st(text2))
+        t1 = _tokenize(text1)
+        t2 = _tokenize(text2)
+        vocab = {w: i for i, w in enumerate(set(t1 + t2))}
+        return _cosine_np(_tfidf_vector(t1, vocab), _tfidf_vector(t2, vocab))
+
+    def score(self, defender_output: DefenderOutput, rewritten_script: str) -> DefenderPreservationResult:
+        quote = defender_output.core_strength_quote
         sentences = _sentence_split(rewritten_script)
 
         if not sentences:
             return DefenderPreservationResult(score=0.0, max_similarity=0.0, best_matching_sentence="")
 
-        sims = [(float(cos_sim(quote_emb, self._embed(s))[0][0]), s) for s in sentences]
+        sims = [(self._similarity(quote, s), s) for s in sentences]
         max_sim, best_sent = max(sims, key=lambda x: x[0])
 
         if max_sim >= 0.85:
