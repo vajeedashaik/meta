@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 from viral_script_engine.agents.critic import CriticAgent
 from viral_script_engine.agents.defender import DefenderAgent
 from viral_script_engine.agents.rewriter import RewriterAgent
+from viral_script_engine.agents.reasoning_parser import ReasoningParser, ArbitratorParseError
 from viral_script_engine.environment.actions import ArbitratorAction
 from viral_script_engine.environment.episode_state import EpisodeState
 from viral_script_engine.environment.observations import (
@@ -21,6 +22,7 @@ from viral_script_engine.rewards.r5_defender_preservation import DefenderPreserv
 from viral_script_engine.rewards.r6_safety import SafetyReward
 from viral_script_engine.rewards.r7_originality import OriginalityReward
 from viral_script_engine.rewards.reward_aggregator import RewardAggregator
+from viral_script_engine.rewards.process_reward import ProcessReward, ProcessRewardResult
 
 _TIERS = {
     "easy": ["S01", "S02", "S03", "S04"],
@@ -68,6 +70,8 @@ class ViralScriptEnv:
         self.moderation_agent = ModerationAgent()
         self.originality_agent = OriginalityAgent()
         self.aggregator = RewardAggregator()
+        self.reasoning_parser = ReasoningParser()
+        self.process_reward_calc = ProcessReward()
         self._state: Optional[EpisodeState] = None
 
         if use_escalation:
@@ -154,7 +158,7 @@ class ViralScriptEnv:
         )
         return self._build_observation().model_dump(), {}
 
-    def step(self, action: dict) -> Tuple[dict, float, bool, bool, dict]:
+    def step(self, action: dict, raw_output: str = None) -> Tuple[dict, float, bool, bool, dict]:
         if self._state is None:
             raise RuntimeError("Call reset() before step()")
 
@@ -177,6 +181,23 @@ class ViralScriptEnv:
             region=self._state.region,
             platform=self._state.platform,
         )
+
+        # Phase 7: parse reasoning chain and compute process reward before rewrite
+        reasoning_chain = None
+        process_result = None
+        if raw_output:
+            try:
+                reasoning_chain = self.reasoning_parser.parse(raw_output)
+                process_result = self.process_reward_calc.score(
+                    reasoning_chain=reasoning_chain,
+                    critic_claims=critique.claims,
+                    defender_output=defender_output,
+                    current_reward_components=self._state.last_reward_components,
+                    episode_start_components=self._state.episode_start_rewards,
+                )
+            except ArbitratorParseError:
+                reasoning_chain = None
+                process_result = None
 
         rewrite_result = self.rewriter.rewrite(self._state.current_script, arb_action)
         new_script = rewrite_result.rewritten_script
@@ -213,6 +234,7 @@ class ViralScriptEnv:
             r5_defender_preservation=r5_result.score,
             r6_safety=r6_result.score,
             r7_originality=r7_result.score,
+            process_reward=process_result.weighted_contribution if process_result else None,
         )
 
         self._state.action_history.append(arb_action.action_type)
@@ -245,6 +267,7 @@ class ViralScriptEnv:
             reward_components=components,
             moderation_output=moderation_out.model_dump(),
             originality_output=originality_out.model_dump(),
+            reasoning_chain=reasoning_chain.model_dump() if reasoning_chain else None,
         )
         self._state.debate_history.append(round_)
         self._state.current_script = new_script
@@ -276,6 +299,8 @@ class ViralScriptEnv:
             "anti_gaming_log": anti_log.model_dump(),
             "moderation_output": moderation_out.model_dump(),
             "originality_output": originality_out.model_dump(),
+            "process_reward_result": process_result.model_dump() if process_result else None,
+            "reasoning_chain": reasoning_chain.model_dump() if reasoning_chain else None,
         }
         return self._build_observation().model_dump(), components.total, terminated, False, info
 

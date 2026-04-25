@@ -80,8 +80,19 @@ Do not read entire codebase to understand progress — read this file.
 ✅ test_phase6.py — 16 tests, all passing
 ✅ Phase 6 gate — PHASE 6 GATE: PASS, R6+R7 active, 7 total reward components
 
-## Phase 7 — [Pending]
-⏳ [feature name] — [one line description]
+## Phase 7 — Process-Aware Reward Shaping
+✅ ReasoningParser — parses extended Arbitrator JSON with reasoning chain, graceful fallback
+✅ ProcessVerifier — rule-based checks: priority_assessment, conflict_check, defender_consideration
+✅ ProcessReward — weighted process score (0.40/0.35/0.25), PROCESS_WEIGHT=0.15
+✅ RewardComponents — process_reward field added; DebateRound.reasoning_chain added
+✅ env.py — reasoning_parser + process_reward_calc wired into step(); raw_output param
+✅ reward_aggregator.py — process_reward added additively before anti-gaming checks
+✅ rollout_function.py — updated ARBITRATOR_SYSTEM prompt with reasoning chain fields
+✅ run_baseline.py — captures process_reward per step, saves to baseline_results_v2.json
+✅ run_dummy_episode.py — shows Process Reward row + Reasoning Chain panel, Phase 7 gate
+✅ demo/run_demo.py — Act 4 shows reasoning chain for trained vs untrained comparison
+✅ test_phase7.py — 21 tests, all passing
+✅ Phase 7 gate — PHASE 7 GATE: PASS, process rewards active, reasoning chain verified
 
 ## Phase 8 — [Pending]
 ⏳ [feature name] — [one line description]

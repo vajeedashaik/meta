@@ -58,6 +58,9 @@ class RewardAggregator:
             return components, log
 
         components.compute_total()
+        # Phase 7: add process reward additively before anti-gaming checks
+        if components.process_reward is not None and components.process_reward > 0:
+            components.total = min(1.0, components.total + components.process_reward)
         pre_penalty_total = components.total
 
         for field in _COMPONENT_FIELDS:

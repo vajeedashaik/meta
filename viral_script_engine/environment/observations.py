@@ -19,6 +19,7 @@ class RewardComponents(BaseModel):
     r5_defender_preservation: Optional[float] = None
     r6_safety: Optional[float] = None
     r7_originality: Optional[float] = None
+    process_reward: Optional[float] = None   # fired before rewrite (Phase 7)
     anti_gaming_penalty: float = 0.0
     total: float = 0.0
 
@@ -51,6 +52,7 @@ class DebateRound(BaseModel):
     reward_components: Optional[RewardComponents] = None
     moderation_output: Optional[Any] = None
     originality_output: Optional[Any] = None
+    reasoning_chain: Optional[Any] = None   # Phase 7: parsed reasoning chain dict
 
 
 class Observation(BaseModel):

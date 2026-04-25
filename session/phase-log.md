@@ -25,6 +25,7 @@ ROLLED BACK — changes reverted, reason in line
 [2026-04-26] [Phase 4] COMPLETE — DifficultyTracker, CriticEscalationEngine, env wiring, 6 tests pass, gate PASS
 [2026-04-26] [Phase 5] COMPLETE — HF deploy infra, demo, README, submission_check 10/10 PASS, demo end-to-end ok
 [2026-04-26] [Phase 6] COMPLETE — ModerationAgent, OriginalityAgent, R6/R7 rewards, 16 tests PASS, gate PASS
+[2026-04-26] [Phase 7] COMPLETE — ReasoningParser, ProcessVerifier, ProcessReward, 21 tests PASS, gate PASS
 
 ---
 

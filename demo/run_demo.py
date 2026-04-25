@@ -165,23 +165,47 @@ def act3_defender_responds(defender_out, critique_claims):
     console.print()
 
 
-def act4_arbitrator_decides(untrained_action: dict, trained_action: dict, compare: bool):
+def act4_arbitrator_decides(
+    untrained_action: dict,
+    trained_action: dict,
+    compare: bool,
+    trained_reasoning: dict = None,
+):
     console.print(Rule("[bold blue]ACT 4 — THE ARBITRATOR DECIDES[/bold blue]", style="blue"))
     if compare:
-        grey_body = (
+        # Untrained panel — no reasoning chain
+        untrained_body = (
+            "[dim][No reasoning chain — zero-shot decision][/dim]\n\n"
             f"[bold]Action:[/bold] {untrained_action.get('action_type')}\n"
             f"[bold]Target:[/bold] {untrained_action.get('target_section')}\n"
-            f"[bold]Instruction:[/bold] {untrained_action.get('instruction', '')[:120]}\n\n"
-            f"[bold]Reasoning:[/bold] {untrained_action.get('reasoning', '')}"
+            f"[bold]Instruction:[/bold] {untrained_action.get('instruction', '')[:120]}"
         )
-        blue_body = (
-            f"[bold]Action:[/bold] {trained_action.get('action_type')}\n"
-            f"[bold]Target:[/bold] {trained_action.get('target_section')}\n"
-            f"[bold]Instruction:[/bold] {trained_action.get('instruction', '')[:120]}\n\n"
-            f"[bold]Reasoning:[/bold] {trained_action.get('reasoning', '')}"
-        )
-        console.print(Panel(grey_body, title="[dim]Untrained Arbitrator[/dim]", border_style="dim", padding=(1, 2)))
-        console.print(Panel(blue_body, title="[blue]Trained Arbitrator[/blue]", border_style="blue", padding=(1, 2)))
+
+        # Trained panel — show reasoning chain if available
+        if trained_reasoning:
+            priority = trained_reasoning.get("priority_assessment", "")
+            cf_ans = trained_reasoning.get("conflict_check_answer", "")
+            cf_rsn = trained_reasoning.get("conflict_check_reason", "")
+            df_ans = trained_reasoning.get("defender_consideration_answer", "")
+            df_rsn = trained_reasoning.get("defender_consideration_reason", "")
+            trained_body = (
+                f"[bold]Priority:[/bold] {priority}\n"
+                f"[bold]Conflict check:[/bold] {cf_ans.upper()} — {cf_rsn}\n"
+                f"[bold]Defender:[/bold] {df_ans.upper()} — {df_rsn}\n\n"
+                f"[bold]Action:[/bold] {trained_action.get('action_type')}\n"
+                f"[bold]Target:[/bold] {trained_action.get('target_section')}\n"
+                f"[bold]Instruction:[/bold] {trained_action.get('instruction', '')[:120]}"
+            )
+        else:
+            trained_body = (
+                f"[bold]Action:[/bold] {trained_action.get('action_type')}\n"
+                f"[bold]Target:[/bold] {trained_action.get('target_section')}\n"
+                f"[bold]Instruction:[/bold] {trained_action.get('instruction', '')[:120]}\n\n"
+                f"[bold]Reasoning:[/bold] {trained_action.get('reasoning', '')}"
+            )
+
+        console.print(Panel(untrained_body, title="[dim]UNTRAINED ARBITRATOR[/dim]", border_style="dim", padding=(1, 2)))
+        console.print(Panel(trained_body, title="[blue]TRAINED ARBITRATOR[/blue]", border_style="blue", padding=(1, 2)))
 
         u_act = untrained_action.get("action_type")
         t_act = trained_action.get("action_type")
@@ -317,6 +341,7 @@ class TrainedArbitratorStub(BaselineArbitratorAgent):
     Stand-in for the GRPO-trained Arbitrator.
     Uses a richer chain-of-thought system prompt to simulate trained behaviour
     when the GRPO checkpoint is not yet available.
+    Produces the Phase 7 extended JSON format with reasoning chain fields.
     """
 
     _TRAINED_SYSTEM = """You are an expert Arbitrator agent trained with GRPO reinforcement learning
@@ -326,10 +351,13 @@ to improve short-form video scripts. You have learned through hundreds of debate
 3. Always balance improvement against the defender's core_strength.
 4. Give specific, actionable instructions — not generic advice.
 
-Think step by step before choosing your action.
+Before choosing your action, reason through the debate explicitly.
 
-Respond ONLY with valid JSON:
+Respond ONLY with valid JSON in this exact order:
 {
+  "priority_assessment": "which critique is most urgent and why — one sentence",
+  "conflict_check": "does acting on this critique risk harming any other reward signal? yes/no + reason",
+  "defender_consideration": "is the Defender's flagged concern relevant to this decision? yes/no + reason",
   "action_type": "hook_rewrite",
   "target_section": "hook",
   "instruction": "specific instruction for the rewriter",
@@ -337,17 +365,19 @@ Respond ONLY with valid JSON:
   "reasoning": "detailed chain-of-thought reasoning"
 }"""
 
-    def act(self, observation: dict) -> dict:
+    def act(self, observation: dict) -> tuple:
+        """Returns (action_dict, raw_output) so the caller can extract reasoning chain."""
         from viral_script_engine.agents.llm_backend import LLMBackend
-        llm = LLMBackend(backend="anthropic", model_name="claude-haiku-4-5-20251001")
         import json as _json
+        llm = LLMBackend(backend="anthropic", model_name="claude-haiku-4-5-20251001")
         user_prompt = self._build_user_prompt(observation)
-        raw = llm.generate(self._TRAINED_SYSTEM, user_prompt, max_tokens=512)
+        raw = llm.generate(self._TRAINED_SYSTEM, user_prompt, max_tokens=768)
         try:
-            return _json.loads(raw)
+            action = _json.loads(raw)
+            return action, raw
         except Exception:
             from viral_script_engine.agents.baseline_arbitrator import _FALLBACK_ACTION
-            return _FALLBACK_ACTION.copy()
+            return _FALLBACK_ACTION.copy(), raw
 
 
 # ---------------------------------------------------------------------------
@@ -405,8 +435,20 @@ def run_compare(script_id: str):
     console.print("[dim]Running Untrained Arbitrator…[/dim]")
     untrained_action = baseline_agent.act(fake_obs)
     console.print("[dim]Running Trained Arbitrator…[/dim]")
-    trained_action = trained_agent.act(fake_obs)
-    act4_arbitrator_decides(untrained_action, trained_action, compare=True)
+    trained_action, trained_raw = trained_agent.act(fake_obs)
+
+    # Parse reasoning chain from trained output for display
+    trained_reasoning = None
+    try:
+        from viral_script_engine.agents.reasoning_parser import ReasoningParser
+        parser = ReasoningParser()
+        chain = parser.parse(trained_raw)
+        trained_reasoning = chain.model_dump()
+        trained_reasoning.pop("action", None)   # action shown separately
+    except Exception:
+        trained_reasoning = None
+
+    act4_arbitrator_decides(untrained_action, trained_action, compare=True, trained_reasoning=trained_reasoning)
 
     # Act 5 — use trained action for rewrite
     from viral_script_engine.environment.actions import ArbitratorAction

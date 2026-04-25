@@ -63,6 +63,7 @@ def run_episode(ep_num: int, difficulty: str, agent: BaselineArbitratorAgent) ->
             "r3": rc.get("r3_cultural_alignment"),
             "r4": rc.get("r4_debate_resolution"),
             "r5": rc.get("r5_defender_preservation"),
+            "process_reward": rc.get("process_reward"),   # Phase 7 — expected ~0 for untrained
             "total": reward,
             "anti_gaming_triggered": anti_log.get("triggered", False),
             "penalty": anti_log.get("penalty_applied", 0.0),
@@ -117,7 +118,7 @@ def main():
                 "error": str(e),
             })
 
-    results_path = LOGS_DIR / "baseline_results.json"
+    results_path = LOGS_DIR / "baseline_results_v2.json"
     with open(results_path, "w", encoding="utf-8") as f:
         json.dump(all_episodes, f, indent=2, default=str)
 

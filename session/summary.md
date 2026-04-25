@@ -13,38 +13,36 @@ One session = one summary. Previous summaries live in phase-log.md.
 2026-04-26
 
 ### Phase
-Phase 5 — HuggingFace Deployment + Demo Infrastructure
+Phase 7 — Process-Aware Reward Shaping
 
 ### What Was Done
-- Created openenv.yaml at project root (OpenEnv manifest)
-- Created app.py — FastAPI server, port 7860, /reset, /step, /state, /health endpoints
-- Created Dockerfile and root requirements.txt for HF Spaces
-- Created demo/run_demo.py — full 5-act demo with --compare and --interactive modes
-- Wrote README.md — complete hackathon README with all 8 required sections
-- Created notebooks/training_colab.ipynb — 10-cell Colab notebook (install → train → eval → demo)
-- Created scripts/submission_check.py — 10-check gate, all PASS
-- Fixed r2_coherence.py and r5_defender_preservation.py — replaced sentence_transformers with TF-IDF cosine sim using numpy only (pyarrow DLL blocked by Windows App Control policy)
-- Fixed test_escalation.py and test_training_pipeline.py — replaced class-level monkey-patches with monkeypatch fixture (proper cleanup)
-- Fixed test_environment.py env fixture — added use_escalation=False to prevent DifficultyTracker from loading persisted mastery and triggering real Anthropic API calls
-- Generated logs/training_vs_baseline.png — synthetic "trained" data plot (replace with real after GRPO)
-- Phase 5 gate: submission_check 10/10 PASS, demo runs end-to-end without error
+- Created agents/reasoning_parser.py — ReasoningChain Pydantic model + ReasoningParser; graceful fallback when fields absent
+- Created rewards/process_verifier.py — 3 rule-based checks (priority, conflict, defender), no LLM calls
+- Created rewards/process_reward.py — ProcessReward with PROCESS_WEIGHT=0.15, weights 0.40/0.35/0.25
+- Updated environment/observations.py — process_reward field in RewardComponents; reasoning_chain in DebateRound
+- Updated environment/env.py — reasoning_parser + process_reward_calc in __init__; step() takes raw_output kwarg
+- Updated rewards/reward_aggregator.py — adds process_reward to total before anti-gaming checks
+- Updated training/rollout_function.py — ARBITRATOR_SYSTEM prompt now includes reasoning chain fields
+- Updated scripts/run_baseline.py — captures process_reward, saves to baseline_results_v2.json
+- Updated scripts/run_dummy_episode.py — Process Reward row, Reasoning Chain panel, Phase 7 gate
+- Updated demo/run_demo.py — Act 4 shows reasoning chain; TrainedArbitratorStub uses extended format
+- Created tests/test_phase7.py — 21 tests, all passing
+- Phase 7 gate: PHASE 7 GATE: PASS
 
 ### What Was NOT Done (carry over)
-- Real GRPO training — requires GPU (Colab) and Anthropic API key set
-- HuggingFace Space deployment — requires HF account and Space creation
-- Team name update in README.md and openenv.yaml
+- Real GRPO training — requires GPU (Colab)
+- Baseline v2 run — requires Anthropic API key (run separately)
 
 ### Errors Encountered
-- Windows cp1252 encoding: → fixed with PYTHONIOENCODING=utf-8 + sys.stdout.reconfigure
-- pyarrow DLL block: killed sentence_transformers AND transformers (both import sklearn → pyarrow) → fixed with TF-IDF fallback in r2/r5
-- test_environment.py test_reward_clipped_to_0_1: DifficultyTracker loaded persisted mastery, triggered real CriticEscalationEngine → Anthropic API → fixed with use_escalation=False in env fixture
-- test_escalation.py / test_training_pipeline.py: class-level monkey-patches leaked into later tests → fixed with monkeypatch fixture
+- env integration tests needed multi-mock (Critic vs Defender return different schemas) — fixed with _multi_mock
+- run_dummy_episode lacked cultural_kb_path — fixed inline
+- Unicode crash in --verbose diff panel (pre-existing Windows cp1252 issue) — gate check works without --verbose
 
 ### Tests Status
-Phase 5: 56 passed, 1 skipped (GRPOConfig — known pyarrow DLL blocker on Windows)
+Phase 7: 21 passed
 
 ### Commit Messages Generated
-feat(phase5): HF deployment infra, demo, README, submission_check — all 10 checks PASS
+feat(phase7): process-aware reward shaping — ReasoningParser, ProcessVerifier, ProcessReward, 21 tests PASS, gate PASS
 
 ---
 

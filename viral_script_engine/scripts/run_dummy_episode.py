@@ -45,7 +45,8 @@ def build_random_action(action_type: ActionType) -> dict:
 
 def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
     scripts_path = str(BASE_DIR / "data" / "test_scripts" / "scripts.json")
-    env = ViralScriptEnv(scripts_path=scripts_path, max_steps=steps, difficulty=difficulty)
+    cultural_kb_path = str(BASE_DIR / "data" / "cultural_kb.json")
+    env = ViralScriptEnv(scripts_path=scripts_path, cultural_kb_path=cultural_kb_path, max_steps=steps, difficulty=difficulty)
 
     obs, _ = env.reset()
     console.print(Panel(
@@ -53,7 +54,7 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
         f"Difficulty: {difficulty}  |  Max steps: {steps}\n"
         f"Region: {obs['region']}  |  Platform: {obs['platform']}  |  Niche: {obs['niche']}\n"
         f"Episode ID: {obs['episode_id']}",
-        title="[bold blue]Phase 6 Demo Episode[/bold blue]",
+        title="[bold blue]Phase 7 Demo Episode[/bold blue]",
         border_style="blue",
     ))
 
@@ -68,7 +69,7 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
         action_type = random.choice(list(ActionType))
         action = build_random_action(action_type)
 
-        obs, reward, terminated, truncated, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action, raw_output=None)
         rc = info["reward_components"]
         mod_out = info.get("moderation_output", {})
         orig_out = info.get("originality_output", {})
@@ -90,6 +91,10 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
             _row("R3 Cultural", "r3_cultural_alignment")
             _row("R4 Resolution", "r4_debate_resolution")
             _row("R5 Preservation", "r5_defender_preservation")
+
+            pr_val = rc.get("process_reward")
+            pr_str = f"{pr_val:.3f}" if pr_val is not None else "N/A"
+            t.add_row("Process Reward", pr_str, _bar(pr_val) if pr_val is not None else "")
 
             r6_val = rc.get("r6_safety")
             r6_suffix = "  [OK] No flags" if mod_out.get("total_flags", 0) == 0 else f"  [!] {mod_out.get('total_flags', 0)} flag(s)"
@@ -125,6 +130,43 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
                     border_style="red",
                 ))
 
+            # Show reasoning chain if present
+            rc_chain = info.get("reasoning_chain")
+            if rc_chain:
+                chain_lines = []
+                if rc_chain.get("priority_assessment"):
+                    chain_lines.append(f"[cyan]Priority:[/cyan] {rc_chain['priority_assessment']}")
+                cf = rc_chain.get("conflict_check_answer", "")
+                if cf:
+                    chain_lines.append(
+                        f"[yellow]Conflict:[/yellow] {cf} — {rc_chain.get('conflict_check_reason', '')}"
+                    )
+                df = rc_chain.get("defender_consideration_answer", "")
+                if df:
+                    chain_lines.append(
+                        f"[green]Defender:[/green] {df} — {rc_chain.get('defender_consideration_reason', '')}"
+                    )
+                pr_res = info.get("process_reward_result")
+                if pr_res:
+                    chain_lines.append(
+                        f"[magenta]Process Scores:[/magenta] "
+                        f"priority={pr_res['priority_score']:.2f}  "
+                        f"conflict={pr_res['conflict_score']:.2f}  "
+                        f"defender={pr_res['defender_score']:.2f}  "
+                        f"total={pr_res['process_score']:.2f}"
+                    )
+                console.print(Panel(
+                    "\n".join(chain_lines) if chain_lines else "[dim]No reasoning chain[/dim]",
+                    title="[bold magenta]Reasoning Chain[/bold magenta]",
+                    border_style="magenta",
+                ))
+            else:
+                console.print(Panel(
+                    "[dim]No reasoning chain — zero-shot decision[/dim]",
+                    title="[bold magenta]Reasoning Chain[/bold magenta]",
+                    border_style="dim",
+                ))
+
             if obs.get("debate_history"):
                 latest = obs["debate_history"][-1]
                 if latest.get("rewrite_diff"):
@@ -143,6 +185,8 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
             "originality_output": orig_out,
             "anti_gaming": info.get("anti_gaming_triggered", False),
             "terminated": terminated,
+            "process_reward_result": info.get("process_reward_result"),
+            "reasoning_chain": info.get("reasoning_chain"),
         })
 
         if terminated:
@@ -183,16 +227,19 @@ def main():
     console.print(f"[dim]Episode log saved -> {log_path}[/dim]")
 
     final_rc = episode_log["final_state"]["reward_components"]
+    # Phase 7 gate: process_reward field must exist in reward components (even if 0.0)
+    has_process_reward_key = "process_reward" in final_rc
     gate_pass = (
         final_rc.get("r6_safety") is not None
         and final_rc.get("r7_originality") is not None
+        and has_process_reward_key
         and log_path.exists()
     )
     style = "bold green" if gate_pass else "bold red"
     if gate_pass:
-        label = "PHASE 6 GATE: PASS — R6 (safety) and R7 (originality) active. Total reward components: 7."
+        label = "PHASE 7 GATE: PASS — Process rewards active. Reasoning chain verified per step."
     else:
-        label = "PHASE 6 GATE: FAIL — R6 or R7 missing from reward output."
+        label = "PHASE 7 GATE: FAIL — process_reward missing from reward output."
     console.print(Panel(f"[{style}]{label}[/{style}]", border_style="green" if gate_pass else "red"))
 
 

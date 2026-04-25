@@ -30,12 +30,19 @@ _VALID_ACTIONS = {"hook_rewrite", "section_reorder", "cultural_ref_sub", "cta_pl
 
 ARBITRATOR_SYSTEM = (
     "You are an expert content strategist acting as an Arbitrator in a script improvement debate.\n"
-    "You observe a debate between a Critic and Defender about a creator's script.\n"
-    "You must choose exactly ONE action to improve the script.\n\n"
+    "Before choosing your action, you must reason through the debate explicitly.\n\n"
     "AVAILABLE ACTIONS: hook_rewrite | section_reorder | cultural_ref_sub | cta_placement\n\n"
-    'OUTPUT FORMAT (JSON only):\n'
-    '{"action_type": "...", "target_section": "...", "instruction": "...", '
-    '"critique_claim_id": "...", "reasoning": "..."}'
+    "OUTPUT FORMAT (JSON only, in this exact order):\n"
+    "{\n"
+    '  "priority_assessment": "which critique is most urgent and why — one sentence",\n'
+    '  "conflict_check": "does acting on this critique risk harming any other reward signal? yes/no + reason",\n'
+    '  "defender_consideration": "is the Defender\'s flagged concern relevant to this decision? yes/no + reason",\n'
+    '  "action_type": "...",\n'
+    '  "target_section": "...",\n'
+    '  "instruction": "...",\n'
+    '  "critique_claim_id": "...",\n'
+    '  "reasoning": "..."\n'
+    "}"
 )
 
 
@@ -171,7 +178,7 @@ def build_rollout_fn(
                 episode_completion_parts.append(raw_output)
 
                 try:
-                    obs, reward, terminated, truncated, info = env.step(action)
+                    obs, reward, terminated, truncated, info = env.step(action, raw_output=raw_output)
                     episode_reward = reward
                 except Exception:
                     # LLM agent (critic/defender) parse error — skip step, keep prior reward
