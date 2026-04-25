@@ -67,8 +67,18 @@ Do not read entire codebase to understand progress — read this file.
 ✅ r5_defender_preservation.py — rewritten to TF-IDF cosine sim (pyarrow DLL workaround)
 ✅ Phase 5 gate — submission_check 10/10 PASS, demo runs end-to-end
 
-## Phase 6 — [Pending]
-⏳ [feature name] — [one line description]
+## Phase 6 — Moderation Agent + Originality Agent
+✅ ModerationAgent — zero-LLM rule-based shadowban detection, 6 categories, severity mapping
+✅ OriginalityAgent — zero-LLM fuzzy template matching, difflib SequenceMatcher at 0.75 threshold
+✅ SafetyReward (R6) — hard zero on high-severity, tiered scoring for medium/low/clean
+✅ OriginalityReward (R7) — cliff at 0.4, continuous scoring above
+✅ data/shadowban_triggers.json — 20+ entries per 6 categories
+✅ data/viral_templates.json — 20+ entries per 4 categories (hooks, structures, CTAs, transitions)
+✅ observations.py — R6/R7 fields in RewardComponents, moderation/originality outputs in DebateRound
+✅ env.py — ModerationAgent + OriginalityAgent wired into reset() and step()
+✅ reward_aggregator.py — new weights (R6: 0.10, R7: 0.10), R6 hard-zero fires before catastrophic drop check
+✅ test_phase6.py — 16 tests, all passing
+✅ Phase 6 gate — PHASE 6 GATE: PASS, R6+R7 active, 7 total reward components
 
 ## Phase 7 — [Pending]
 ⏳ [feature name] — [one line description]

@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 _COMPONENT_FIELDS = [
     "r1_hook_strength", "r2_coherence", "r3_cultural_alignment",
     "r4_debate_resolution", "r5_defender_preservation",
+    "r6_safety", "r7_originality",
 ]
 
 _DROP_THRESHOLD = 0.25
@@ -36,6 +37,26 @@ class RewardAggregator:
         episode_id: str = "",
         step_num: int = 0,
     ) -> Tuple[RewardComponents, AntiGamingLog]:
+        # Hard zero: if R6 (safety) is 0.0, the entire step reward is zeroed out
+        # regardless of other component scores — any shadowban trigger is non-negotiable.
+        if components.r6_safety is not None and components.r6_safety == 0.0:
+            components.compute_total()
+            pre_penalty_total = components.total
+            components.total = 0.0
+            components.anti_gaming_penalty = 1.0
+            logger.warning("R6 safety hard zero triggered — shadowban content detected, zeroing step reward.")
+            log = AntiGamingLog(
+                episode_id=episode_id,
+                step_num=step_num,
+                triggered=True,
+                rule_triggered="r6_safety_hard_zero",
+                component_that_dropped="r6_safety",
+                penalty_applied=1.0,
+                pre_penalty_total=pre_penalty_total,
+                post_penalty_total=0.0,
+            )
+            return components, log
+
         components.compute_total()
         pre_penalty_total = components.total
 

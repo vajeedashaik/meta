@@ -11,11 +11,15 @@ from viral_script_engine.environment.episode_state import EpisodeState
 from viral_script_engine.environment.observations import (
     DebateRound, Observation, RewardComponents,
 )
+from viral_script_engine.agents.moderation_agent import ModerationAgent
+from viral_script_engine.agents.originality_agent import OriginalityAgent
 from viral_script_engine.rewards.r1_hook_strength import HookStrengthReward
 from viral_script_engine.rewards.r2_coherence import CoherenceReward
 from viral_script_engine.rewards.r3_cultural_alignment import CulturalAlignmentReward
 from viral_script_engine.rewards.r4_debate_resolution import DebateResolutionReward
 from viral_script_engine.rewards.r5_defender_preservation import DefenderPreservationReward
+from viral_script_engine.rewards.r6_safety import SafetyReward
+from viral_script_engine.rewards.r7_originality import OriginalityReward
 from viral_script_engine.rewards.reward_aggregator import RewardAggregator
 
 _TIERS = {
@@ -59,6 +63,10 @@ class ViralScriptEnv:
         self.r3 = CulturalAlignmentReward(knowledge_base_path=cultural_kb_path)
         self.r4 = DebateResolutionReward(critic_agent=self.critic)
         self.r5 = DefenderPreservationReward()
+        self.r6 = SafetyReward()
+        self.r7 = OriginalityReward()
+        self.moderation_agent = ModerationAgent()
+        self.originality_agent = OriginalityAgent()
         self.aggregator = RewardAggregator()
         self._state: Optional[EpisodeState] = None
 
@@ -125,10 +133,16 @@ class ViralScriptEnv:
         r1_result = self.r1.score(script["script_text"])
         r2_result = self.r2.score(script["script_text"], script["script_text"])
         r3_result = self.r3.score(script["script_text"], script.get("region", "pan_india_english"))
+        mod_out = self.moderation_agent.check(script["script_text"])
+        orig_out = self.originality_agent.check(script["script_text"])
+        r6_result = self.r6.score(mod_out)
+        r7_result = self.r7.score(orig_out)
         initial_rewards = RewardComponents(
             r1_hook_strength=r1_result.score,
             r2_coherence=r2_result.score,
             r3_cultural_alignment=r3_result.score,
+            r6_safety=r6_result.score,
+            r7_originality=r7_result.score,
         )
         initial_rewards.compute_total()
 
@@ -186,12 +200,19 @@ class ViralScriptEnv:
 
         r5_result = self.r5.score(defender_output, new_script)
 
+        moderation_out = self.moderation_agent.check(new_script)
+        originality_out = self.originality_agent.check(new_script)
+        r6_result = self.r6.score(moderation_out)
+        r7_result = self.r7.score(originality_out)
+
         components = RewardComponents(
             r1_hook_strength=r1_result.score,
             r2_coherence=r2_result.score,
             r3_cultural_alignment=r3_result.score,
             r4_debate_resolution=r4_result.score if r4_result else None,
             r5_defender_preservation=r5_result.score,
+            r6_safety=r6_result.score,
+            r7_originality=r7_result.score,
         )
 
         self._state.action_history.append(arb_action.action_type)
@@ -222,6 +243,8 @@ class ViralScriptEnv:
             arbitrator_action=arb_action,
             rewrite_diff=rewrite_result.diff,
             reward_components=components,
+            moderation_output=moderation_out.model_dump(),
+            originality_output=originality_out.model_dump(),
         )
         self._state.debate_history.append(round_)
         self._state.current_script = new_script
@@ -251,6 +274,8 @@ class ViralScriptEnv:
             "anti_gaming_triggered": anti_log.triggered,
             "penalty_reason": anti_log.rule_triggered,
             "anti_gaming_log": anti_log.model_dump(),
+            "moderation_output": moderation_out.model_dump(),
+            "originality_output": originality_out.model_dump(),
         }
         return self._build_observation().model_dump(), components.total, terminated, False, info
 
@@ -278,6 +303,13 @@ class ViralScriptEnv:
 
     def _build_observation(self) -> Observation:
         s = self._state
+        last_round = s.debate_history[-1] if s.debate_history else None
+        mod_flags = []
+        orig_flags = []
+        if last_round and last_round.moderation_output:
+            mod_flags = last_round.moderation_output.get("flags", [])
+        if last_round and last_round.originality_output:
+            orig_flags = last_round.originality_output.get("flags", [])
         return Observation(
             current_script=s.current_script,
             original_script=s.original_script,
@@ -290,4 +322,6 @@ class ViralScriptEnv:
             reward_components=s.last_reward_components,
             difficulty_level=s.difficulty_level,
             episode_id=s.episode_id,
+            current_moderation_flags=mod_flags,
+            current_originality_flags=orig_flags,
         )

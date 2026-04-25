@@ -21,6 +21,11 @@ console = Console()
 BASE_DIR = Path(__file__).parent.parent
 
 
+def _bar(score: float, width: int = 8) -> str:
+    filled = round(score * width)
+    return "#" * filled + "." * (width - filled)
+
+
 def build_random_action(action_type: ActionType) -> dict:
     labels = {
         ActionType.HOOK_REWRITE: ("hook", "Rewrite the hook to open with a specific number or bold claim."),
@@ -48,7 +53,7 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
         f"Difficulty: {difficulty}  |  Max steps: {steps}\n"
         f"Region: {obs['region']}  |  Platform: {obs['platform']}  |  Niche: {obs['niche']}\n"
         f"Episode ID: {obs['episode_id']}",
-        title="[bold blue]Phase 1 Demo Episode[/bold blue]",
+        title="[bold blue]Phase 6 Demo Episode[/bold blue]",
         border_style="blue",
     ))
 
@@ -65,21 +70,60 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
 
         obs, reward, terminated, truncated, info = env.step(action)
         rc = info["reward_components"]
+        mod_out = info.get("moderation_output", {})
+        orig_out = info.get("originality_output", {})
 
         if verbose:
             t = Table(title=f"Step {step_num + 1} — {action_type.value}", box=box.SIMPLE_HEAD)
             t.add_column("Metric", style="cyan", min_width=22)
-            t.add_column("Value", min_width=12)
-            r1_val = rc.get("r1_hook_strength")
-            r2_val = rc.get("r2_coherence")
-            t.add_row("R1 Hook Strength", f"{r1_val:.3f}" if r1_val is not None else "N/A")
-            t.add_row("R2 Coherence", f"{r2_val:.3f}" if r2_val is not None else "N/A")
-            t.add_row("Total Reward", f"[bold]{reward:.3f}[/bold]")
+            t.add_column("Score", min_width=12)
+            t.add_column("Bar", min_width=10)
+
+            def _row(label, key, suffix=""):
+                val = rc.get(key)
+                score_str = f"{val:.3f}" if val is not None else "N/A"
+                bar_str = _bar(val) if val is not None else ""
+                t.add_row(label, score_str + suffix, bar_str)
+
+            _row("R1 Hook Strength", "r1_hook_strength")
+            _row("R2 Coherence", "r2_coherence")
+            _row("R3 Cultural", "r3_cultural_alignment")
+            _row("R4 Resolution", "r4_debate_resolution")
+            _row("R5 Preservation", "r5_defender_preservation")
+
+            r6_val = rc.get("r6_safety")
+            r6_suffix = "  [OK] No flags" if mod_out.get("total_flags", 0) == 0 else f"  [!] {mod_out.get('total_flags', 0)} flag(s)"
+            r6_str = (f"{r6_val:.3f}{r6_suffix}" if r6_val is not None else "N/A")
+            t.add_row("R6 Safety", r6_str, _bar(r6_val) if r6_val is not None else "")
+
+            r7_val = rc.get("r7_originality")
+            orig_flags = len(orig_out.get("flags", []))
+            r7_suffix = f"  [!] {orig_flags} template match(es)" if orig_flags > 0 else "  [OK] Original"
+            r7_str = (f"{r7_val:.3f}{r7_suffix}" if r7_val is not None else "N/A")
+            t.add_row("R7 Originality", r7_str, _bar(r7_val) if r7_val is not None else "")
+
+            t.add_row("-" * 22, "-" * 12, "-" * 10)
+            t.add_row("[bold]Total[/bold]", f"[bold]{reward:.3f}[/bold]", _bar(reward))
+
             if info.get("anti_gaming_triggered"):
-                t.add_row("Anti-Gaming Penalty", f"[red]{rc.get('anti_gaming_penalty', 0):.3f}[/red]")
-                t.add_row("Penalty Reason", f"[red]{info.get('penalty_reason', '')}[/red]")
-            t.add_row("Terminated", str(terminated))
+                t.add_row("Anti-Gaming Penalty", f"[red]{rc.get('anti_gaming_penalty', 0):.3f}[/red]", "")
+                t.add_row("Penalty Reason", f"[red]{info.get('penalty_reason', '')}[/red]", "")
+            t.add_row("Terminated", str(terminated), "")
             console.print(t)
+
+            # Show moderation flags in red panel if any
+            mod_flags = mod_out.get("flags", [])
+            if mod_flags:
+                flag_lines = []
+                for fl in mod_flags:
+                    flag_lines.append(
+                        f"  [{fl['severity']}] {fl['category']} in {fl['position']}: \"{fl['trigger_phrase']}\" → {fl['suggestion']}"
+                    )
+                console.print(Panel(
+                    "\n".join(flag_lines),
+                    title="[bold red]!! MODERATION FLAGS DETECTED[/bold red]",
+                    border_style="red",
+                ))
 
             if obs.get("debate_history"):
                 latest = obs["debate_history"][-1]
@@ -95,6 +139,8 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
             "action": action,
             "reward": reward,
             "reward_components": rc,
+            "moderation_output": mod_out,
+            "originality_output": orig_out,
             "anti_gaming": info.get("anti_gaming_triggered", False),
             "terminated": terminated,
         })
@@ -108,8 +154,10 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
 
     console.print(Panel(
         f"[bold green]Final Reward:[/bold green] {final_rc.get('total', 0):.3f}\n"
-        f"R1 Hook Strength: {final_rc.get('r1_hook_strength', 'N/A')}\n"
-        f"R2 Coherence: {final_rc.get('r2_coherence', 'N/A')}\n"
+        f"R1 Hook Strength:    {final_rc.get('r1_hook_strength', 'N/A')}\n"
+        f"R2 Coherence:        {final_rc.get('r2_coherence', 'N/A')}\n"
+        f"R6 Safety:           {final_rc.get('r6_safety', 'N/A')}\n"
+        f"R7 Originality:      {final_rc.get('r7_originality', 'N/A')}\n"
         f"Steps completed: {final_state['step_num']}",
         title="Episode Summary",
         border_style="green",
@@ -119,7 +167,7 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Phase 1 dummy episode")
+    parser = argparse.ArgumentParser(description="Run Phase 6 dummy episode")
     parser.add_argument("--difficulty", default="easy", choices=["easy", "medium", "hard"])
     parser.add_argument("--steps", type=int, default=3)
     parser.add_argument("--verbose", action="store_true")
@@ -136,12 +184,15 @@ def main():
 
     final_rc = episode_log["final_state"]["reward_components"]
     gate_pass = (
-        final_rc.get("r1_hook_strength") is not None
-        and final_rc.get("r2_coherence") is not None
+        final_rc.get("r6_safety") is not None
+        and final_rc.get("r7_originality") is not None
         and log_path.exists()
     )
     style = "bold green" if gate_pass else "bold red"
-    label = f"PHASE 1 GATE: {'PASS' if gate_pass else 'FAIL'}"
+    if gate_pass:
+        label = "PHASE 6 GATE: PASS — R6 (safety) and R7 (originality) active. Total reward components: 7."
+    else:
+        label = "PHASE 6 GATE: FAIL — R6 or R7 missing from reward output."
     console.print(Panel(f"[{style}]{label}[/{style}]", border_style="green" if gate_pass else "red"))
 
 
