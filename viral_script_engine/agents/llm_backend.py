@@ -1,5 +1,5 @@
 class LLMBackend:
-    def __init__(self, backend: str = "qwen", model_name: str = "Qwen/Qwen2.5-7B-Instruct"):
+    def __init__(self, backend: str = "qwen", model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
         """
         backend: "qwen" | "anthropic" | "openai"
         Default is local Qwen — no API key needed.
