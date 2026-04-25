@@ -30,7 +30,7 @@ def load_scripts(dry_run: bool) -> list:
     return scripts
 
 
-def run_gate(max_retries: int = 3, dry_run: bool = False, backend: str = "qwen", model_name: str = "Qwen/Qwen2.5-1.5B-Instruct") -> bool:
+def run_gate(max_retries: int = 3, dry_run: bool = False, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile") -> bool:
     agent = CriticAgent(backend=backend, model_name=model_name)
     evaluator = CriticEvaluator()
     scripts = load_scripts(dry_run)
@@ -126,8 +126,8 @@ def main():
     parser = argparse.ArgumentParser(description="Run Critic quality gate")
     parser.add_argument("--max-retries", type=int, default=3)
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--backend", default="qwen", choices=["qwen", "anthropic", "openai"])
-    parser.add_argument("--model-name", default="Qwen/Qwen2.5-1.5B-Instruct")
+    parser.add_argument("--backend", default="groq", choices=["groq", "qwen", "anthropic", "openai"])
+    parser.add_argument("--model-name", default="llama-3.3-70b-versatile")
     args = parser.parse_args()
 
     passed = run_gate(max_retries=args.max_retries, dry_run=args.dry_run, backend=args.backend, model_name=args.model_name)

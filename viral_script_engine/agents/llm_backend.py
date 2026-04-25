@@ -1,17 +1,20 @@
+import os
+
+
 class LLMBackend:
-    def __init__(self, backend: str = "qwen", model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
+    def __init__(self, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile"):
         """
-        backend: "qwen" | "anthropic" | "openai"
-        Default is local Qwen — no API key needed.
-        Pipeline is lazy-loaded on first generate() call.
+        backend: "groq" | "qwen" | "anthropic" | "openai"
+        Default: Groq cloud inference — fast, no local GPU needed.
+        Pipeline/client is lazy-loaded on first generate() call.
         """
         self.backend = backend
         self.model_name = model_name
         self._pipe = None
         self._client = None
 
-        if backend not in ("qwen", "anthropic", "openai"):
-            raise ValueError(f"Unknown backend: {backend!r}. Choose qwen | anthropic | openai")
+        if backend not in ("groq", "qwen", "anthropic", "openai"):
+            raise ValueError(f"Unknown backend: {backend!r}. Choose groq | qwen | anthropic | openai")
 
     def _get_pipe(self):
         if self._pipe is None:
@@ -21,7 +24,10 @@ class LLMBackend:
 
     def _get_client(self):
         if self._client is None:
-            if self.backend == "anthropic":
+            if self.backend == "groq":
+                from groq import Groq
+                self._client = Groq(api_key=os.environ["GROQ_API_KEY"])
+            elif self.backend == "anthropic":
                 import anthropic
                 self._client = anthropic.Anthropic()
             elif self.backend == "openai":
@@ -37,6 +43,17 @@ class LLMBackend:
             ]
             out = self._get_pipe()(messages, max_new_tokens=max_tokens, return_full_text=False)
             return out[0]["generated_text"]
+
+        elif self.backend == "groq":
+            resp = self._get_client().chat.completions.create(
+                model=self.model_name,
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            return resp.choices[0].message.content
 
         elif self.backend == "anthropic":
             msg = self._get_client().messages.create(

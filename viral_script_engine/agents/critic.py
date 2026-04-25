@@ -67,7 +67,7 @@ class CritiqueOutput(BaseModel):
 
 
 class CriticAgent:
-    def __init__(self, backend: str = "qwen", model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
+    def __init__(self, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile"):
         self.llm = LLMBackend(backend=backend, model_name=model_name)
 
     def _parse_response(self, raw: str, user_prompt: str) -> CritiqueOutput:
