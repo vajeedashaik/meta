@@ -23,6 +23,9 @@ from viral_script_engine.rewards.r6_safety import SafetyReward
 from viral_script_engine.rewards.r7_originality import OriginalityReward
 from viral_script_engine.rewards.reward_aggregator import RewardAggregator
 from viral_script_engine.rewards.process_reward import ProcessReward, ProcessRewardResult
+from viral_script_engine.personas.creator_profile import CreatorProfile, CreatorTier
+from viral_script_engine.personas.profile_generator import ProfileGenerator
+from viral_script_engine.rewards.r8_persona_fit import PersonaFitReward
 
 _TIERS = {
     "easy": ["S01", "S02", "S03", "S04"],
@@ -72,7 +75,10 @@ class ViralScriptEnv:
         self.aggregator = RewardAggregator()
         self.reasoning_parser = ReasoningParser()
         self.process_reward_calc = ProcessReward()
+        self.profile_generator = ProfileGenerator()
+        self.r8 = PersonaFitReward()
         self._state: Optional[EpisodeState] = None
+        self._current_profile: Optional[CreatorProfile] = None
 
         if use_escalation:
             if difficulty_tracker is None:
@@ -156,7 +162,30 @@ class ViralScriptEnv:
             difficulty_level=difficulty,
             initial_rewards=initial_rewards,
         )
+
+        # Phase 8: generate a creator profile matching episode difficulty
+        self._current_profile = self._generate_profile_for_difficulty(
+            difficulty=difficulty,
+            niche=script.get("niche", "personal finance"),
+            seed=hash(script.get("script_id", "default")) % (2 ** 31),
+        )
+
         return self._build_observation().model_dump(), {}
+
+    def _generate_profile_for_difficulty(
+        self, difficulty: str, niche: str, seed: int
+    ) -> CreatorProfile:
+        """Map episode difficulty to an appropriate creator tier."""
+        tier_map = {
+            "easy": [CreatorTier.BEGINNER, CreatorTier.GROWING],
+            "medium": [CreatorTier.GROWING, CreatorTier.ESTABLISHED],
+            "hard": [CreatorTier.ESTABLISHED, CreatorTier.VERIFIED],
+            "self_generated": [CreatorTier.ESTABLISHED, CreatorTier.VERIFIED],
+        }
+        import random as _rng
+        tiers = tier_map.get(difficulty, [CreatorTier.GROWING])
+        tier = _rng.Random(seed).choice(tiers)
+        return self.profile_generator.generate(tier=tier, niche=niche, seed=seed)
 
     def step(self, action: dict, raw_output: str = None) -> Tuple[dict, float, bool, bool, dict]:
         if self._state is None:
@@ -226,6 +255,16 @@ class ViralScriptEnv:
         r6_result = self.r6.score(moderation_out)
         r7_result = self.r7.score(originality_out)
 
+        # Phase 8: compute R8 persona fit
+        r8_score = None
+        if self._current_profile is not None and targeted_claim is not None:
+            r8_result = self.r8.score(
+                action=arb_action,
+                creator_profile=self._current_profile,
+                addressed_critique_class=targeted_claim.critique_class,
+            )
+            r8_score = r8_result.score
+
         components = RewardComponents(
             r1_hook_strength=r1_result.score,
             r2_coherence=r2_result.score,
@@ -234,6 +273,7 @@ class ViralScriptEnv:
             r5_defender_preservation=r5_result.score,
             r6_safety=r6_result.score,
             r7_originality=r7_result.score,
+            r8_persona_fit=r8_score,
             process_reward=process_result.weighted_contribution if process_result else None,
         )
 
@@ -301,6 +341,7 @@ class ViralScriptEnv:
             "originality_output": originality_out.model_dump(),
             "process_reward_result": process_result.model_dump() if process_result else None,
             "reasoning_chain": reasoning_chain.model_dump() if reasoning_chain else None,
+            "creator_profile": self._current_profile.model_dump(mode="json") if self._current_profile else None,
         }
         return self._build_observation().model_dump(), components.total, terminated, False, info
 
@@ -324,6 +365,7 @@ class ViralScriptEnv:
             "difficulty_level": s.difficulty_level,
             "episode_id": s.episode_id,
             "anti_gaming_logs": getattr(s, "anti_gaming_logs", []),
+            "creator_profile": self._current_profile.model_dump(mode="json") if self._current_profile else None,
         }
 
     def _build_observation(self) -> Observation:
@@ -349,4 +391,5 @@ class ViralScriptEnv:
             episode_id=s.episode_id,
             current_moderation_flags=mod_flags,
             current_originality_flags=orig_flags,
+            creator_profile=self._current_profile.model_dump(mode="json") if self._current_profile else None,
         )

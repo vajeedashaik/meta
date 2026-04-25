@@ -49,12 +49,26 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
     env = ViralScriptEnv(scripts_path=scripts_path, cultural_kb_path=cultural_kb_path, max_steps=steps, difficulty=difficulty)
 
     obs, _ = env.reset()
+
+    # Phase 8: show creator profile panel
+    cp = obs.get("creator_profile") or {}
+    if cp:
+        console.print(Panel(
+            f"Tier:        {cp.get('tier','?').capitalize()} ({cp.get('follower_count','?')} followers)\n"
+            f"Frequency:   {cp.get('posting_frequency','?')}\n"
+            f"Niche:       {cp.get('niche','?')}\n"
+            f"Weak points: {', '.join(cp.get('past_weak_points', []))}\n"
+            f"Voice:       {', '.join(cp.get('voice_descriptors', []))}",
+            title="[bold cyan]CREATOR PROFILE[/bold cyan]",
+            border_style="cyan",
+        ))
+
     console.print(Panel(
         f"[bold]Episode started[/bold]\n"
         f"Difficulty: {difficulty}  |  Max steps: {steps}\n"
         f"Region: {obs['region']}  |  Platform: {obs['platform']}  |  Niche: {obs['niche']}\n"
         f"Episode ID: {obs['episode_id']}",
-        title="[bold blue]Phase 7 Demo Episode[/bold blue]",
+        title="[bold blue]Phase 8 Demo Episode[/bold blue]",
         border_style="blue",
     ))
 
@@ -106,6 +120,10 @@ def run_episode(difficulty: str, steps: int, verbose: bool) -> dict:
             r7_suffix = f"  [!] {orig_flags} template match(es)" if orig_flags > 0 else "  [OK] Original"
             r7_str = (f"{r7_val:.3f}{r7_suffix}" if r7_val is not None else "N/A")
             t.add_row("R7 Originality", r7_str, _bar(r7_val) if r7_val is not None else "")
+
+            r8_val = rc.get("r8_persona_fit")
+            r8_str = f"{r8_val:.3f}" if r8_val is not None else "N/A"
+            t.add_row("R8 Persona Fit", r8_str, _bar(r8_val) if r8_val is not None else "")
 
             t.add_row("-" * 22, "-" * 12, "-" * 10)
             t.add_row("[bold]Total[/bold]", f"[bold]{reward:.3f}[/bold]", _bar(reward))
@@ -227,19 +245,31 @@ def main():
     console.print(f"[dim]Episode log saved -> {log_path}[/dim]")
 
     final_rc = episode_log["final_state"]["reward_components"]
-    # Phase 7 gate: process_reward field must exist in reward components (even if 0.0)
+    final_profile = episode_log["final_state"].get("creator_profile") or {}
+    profile_tier = final_profile.get("tier", "")
+
     has_process_reward_key = "process_reward" in final_rc
+    has_r8_key = "r8_persona_fit" in final_rc
+    has_profile = bool(final_profile)
+
     gate_pass = (
         final_rc.get("r6_safety") is not None
         and final_rc.get("r7_originality") is not None
         and has_process_reward_key
+        and has_r8_key
+        and has_profile
         and log_path.exists()
     )
     style = "bold green" if gate_pass else "bold red"
     if gate_pass:
-        label = "PHASE 7 GATE: PASS — Process rewards active. Reasoning chain verified per step."
+        label = f"PHASE 8 GATE: PASS — Creator persona active. R8 (persona fit) firing. Profile tier: {profile_tier}."
     else:
-        label = "PHASE 7 GATE: FAIL — process_reward missing from reward output."
+        missing = []
+        if not has_r8_key:
+            missing.append("r8_persona_fit missing from reward output")
+        if not has_profile:
+            missing.append("creator_profile missing from episode state")
+        label = "PHASE 8 GATE: FAIL — " + "; ".join(missing) if missing else "PHASE 8 GATE: FAIL"
     console.print(Panel(f"[{style}]{label}[/{style}]", border_style="green" if gate_pass else "red"))
 
 

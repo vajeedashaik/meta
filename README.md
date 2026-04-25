@@ -149,6 +149,18 @@ The Arbitrator policy is trained end-to-end: the model generates an action JSON,
 
 Short-form video drives the majority of time-on-platform across Instagram Reels and Threads. A creator tool that genuinely improves script quality — not through templates but through reasoning — directly increases content quality, creator retention, and platform engagement. The multi-agent RL approach means the system can be adapted to any regional market, niche, or platform format by swapping the cultural knowledge base, without retraining the core policy. This is how Meta builds creator tooling that scales from Mumbai Gen Z to Hinglish finance to rural agriculture content.
 
+### Creator Persona Modelling — Ready for Production
+
+The Creator Profile in the observation space uses only data Meta already has:
+follower count, posting frequency, engagement rate, niche. To deploy this
+system at scale, Meta would replace the simulated profiles with real creator
+data from their internal systems. No retraining needed — the Arbitrator
+already knows how to use profile data because it trained on it.
+
+This turns the Viral Script Debugging Engine from a generic script coach
+into a personalised creative collaborator for 80M+ creators, each receiving
+advice calibrated to exactly where they are in their growth journey.
+
 ---
 
 ## HuggingFace Space

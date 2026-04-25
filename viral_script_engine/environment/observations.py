@@ -6,8 +6,8 @@ from viral_script_engine.agents.critic import CritiqueClaim
 from viral_script_engine.environment.actions import ArbitratorAction
 
 _WEIGHTS: Dict[str, float] = {
-    "r1": 0.20, "r2": 0.15, "r3": 0.15, "r4": 0.15, "r5": 0.15,
-    "r6": 0.10, "r7": 0.10,
+    "r1": 0.18, "r2": 0.13, "r3": 0.13, "r4": 0.13, "r5": 0.13,
+    "r6": 0.08, "r7": 0.08, "r8": 0.10,
 }
 
 
@@ -19,6 +19,7 @@ class RewardComponents(BaseModel):
     r5_defender_preservation: Optional[float] = None
     r6_safety: Optional[float] = None
     r7_originality: Optional[float] = None
+    r8_persona_fit: Optional[float] = None   # Phase 8: creator persona fit
     process_reward: Optional[float] = None   # fired before rewrite (Phase 7)
     anti_gaming_penalty: float = 0.0
     total: float = 0.0
@@ -32,6 +33,7 @@ class RewardComponents(BaseModel):
             "r5": self.r5_defender_preservation,
             "r6": self.r6_safety,
             "r7": self.r7_originality,
+            "r8": self.r8_persona_fit,
         }
         active = {k: v for k, v in vals.items() if v is not None}
         if not active:
@@ -69,3 +71,4 @@ class Observation(BaseModel):
     episode_id: str
     current_moderation_flags: List[Any] = []
     current_originality_flags: List[Any] = []
+    creator_profile: Optional[Any] = None   # Phase 8: CreatorProfile dict

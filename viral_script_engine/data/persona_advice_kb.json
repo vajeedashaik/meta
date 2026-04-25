@@ -1,0 +1,30 @@
+{
+  "beginner": {
+    "priority_actions": ["hook_rewrite", "cta_placement"],
+    "deprioritised_actions": ["cultural_ref_sub", "section_reorder"],
+    "rationale": "Beginners need fundamentals first. Hook and CTA drive the most growth at low follower counts. Cultural refinement is premature when basic structure is broken.",
+    "max_changes_per_episode": 2,
+    "forbidden_advice": ["optimise for saves", "target niche algorithm signals"]
+  },
+  "growing": {
+    "priority_actions": ["hook_rewrite", "section_reorder"],
+    "deprioritised_actions": ["cultural_ref_sub"],
+    "rationale": "Growing creators have hooks working partially. Focus on pacing and structure to push past the 10k ceiling.",
+    "max_changes_per_episode": 3,
+    "forbidden_advice": []
+  },
+  "established": {
+    "priority_actions": ["cultural_ref_sub", "section_reorder", "cta_placement"],
+    "deprioritised_actions": [],
+    "rationale": "Established creators have basics down. Cultural specificity and originality drive differentiation at this tier.",
+    "max_changes_per_episode": 4,
+    "forbidden_advice": ["simplify the hook"]
+  },
+  "verified": {
+    "priority_actions": ["cultural_ref_sub", "section_reorder"],
+    "deprioritised_actions": ["hook_rewrite"],
+    "rationale": "Verified creators have a proven hook style. Do not touch it. Focus on deeper content quality and cultural resonance.",
+    "max_changes_per_episode": 5,
+    "forbidden_advice": ["change the hook", "add a CTA"]
+  }
+}

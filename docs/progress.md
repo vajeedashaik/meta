@@ -94,8 +94,22 @@ Do not read entire codebase to understand progress — read this file.
 ✅ test_phase7.py — 21 tests, all passing
 ✅ Phase 7 gate — PHASE 7 GATE: PASS, process rewards active, reasoning chain verified
 
-## Phase 8 — [Pending]
-⏳ [feature name] — [one line description]
+## Phase 8 — Creator Persona Modelling
+✅ CreatorProfile — pydantic schema with tier, follower_count, engagement_rate, weak/strong points
+✅ CreatorTier + PostingFrequency enums — BEGINNER/GROWING/ESTABLISHED/VERIFIED tiers
+✅ ProfileGenerator — deterministic synthetic profiles per tier; generate_batch() with realistic distribution
+✅ PersonaKB — wrapper around persona_advice_kb.json for tier-keyed rule lookups
+✅ persona_advice_kb.json — priority/deprioritised/forbidden advice rules per tier
+✅ PersonaFitReward (R8) — scores action-tier fit: 1.0 priority, 0.5 neutral, 0.2 deprioritised, 0.0 forbidden
+✅ observations.py — r8_persona_fit in RewardComponents; creator_profile in Observation; weights updated (R1:0.18…R8:0.10)
+✅ env.py — ProfileGenerator + R8 wired; _generate_profile_for_difficulty(); profile in state()/obs/info
+✅ reward_aggregator.py — r8_persona_fit added to anti-gaming component fields
+✅ rollout_function.py — CREATOR PROFILE section added to observation prompt template
+✅ curriculum JSONL files — creator_profile field added to all 25 episode configs
+✅ run_dummy_episode.py — Creator Profile panel in Act 1; Phase 8 gate check
+✅ test_phase8.py — 25 tests, all passing
+✅ README.md — "Creator Persona Modelling — Ready for Production" section added
+✅ Phase 8 gate — PHASE 8 GATE: PASS, R8 firing, profile tier in episode log
 
 ---
 

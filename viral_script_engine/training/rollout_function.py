@@ -76,11 +76,25 @@ def _format_observation_prompt(obs: dict, step_num: int, max_steps: int) -> str:
                 f"Flagged claims: {df.get('flagged_critic_claims', [])}"
             )
 
+    # Phase 8: include creator profile in prompt
+    profile = obs.get("creator_profile") or {}
+    profile_section = ""
+    if profile:
+        profile_section = (
+            f"\nCREATOR PROFILE:\n"
+            f"Tier: {profile.get('tier', 'unknown')} ({profile.get('follower_count', '?')} followers)\n"
+            f"Posting frequency: {profile.get('posting_frequency', 'unknown')}\n"
+            f"Recurring weak points: {profile.get('past_weak_points', [])}\n"
+            f"Voice: {profile.get('voice_descriptors', [])}\n"
+            f"Niche maturity: {profile.get('niche_maturity', 'unknown')}\n"
+        )
+
     return (
         f"<|system|>\n{ARBITRATOR_SYSTEM}\n<|end|>\n\n"
         f"<|user|>\n"
         f"CURRENT SCRIPT:\n{current_script}\n\n"
         f"REGION: {region} | PLATFORM: {platform} | NICHE: {niche}\n\n"
+        f"{profile_section}"
         f"CRITIC CLAIMS:\n{critic_text}\n\n"
         f"DEFENDER RESPONSE:\n{defender_text}\n\n"
         f"CURRENT REWARDS: R1={r1:.2f} R2={r2:.2f} R3={r3} R4={r4} R5={r5}\n"
