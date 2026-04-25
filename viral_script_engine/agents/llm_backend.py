@@ -2,7 +2,7 @@ import os
 
 
 class LLMBackend:
-    def __init__(self, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, backend: str = "anthropic", model_name: str = "claude-haiku-4-5-20251001"):
         """
         backend: "groq" | "qwen" | "anthropic" | "openai"
         Default: Groq cloud inference — fast, no local GPU needed.
@@ -35,6 +35,16 @@ class LLMBackend:
                 self._client = OpenAI()
         return self._client
 
+    @staticmethod
+    def _strip_fences(text: str) -> str:
+        text = text.strip()
+        if text.startswith("```"):
+            newline = text.find("\n")
+            text = text[newline + 1:] if newline != -1 else text[3:]
+            if text.endswith("```"):
+                text = text[:-3].rstrip()
+        return text
+
     def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 512) -> str:
         if self.backend == "qwen":
             messages = [
@@ -42,7 +52,7 @@ class LLMBackend:
                 {"role": "user", "content": user_prompt},
             ]
             out = self._get_pipe()(messages, max_new_tokens=max_tokens, return_full_text=False)
-            return out[0]["generated_text"]
+            return self._strip_fences(out[0]["generated_text"])
 
         elif self.backend == "groq":
             resp = self._get_client().chat.completions.create(
@@ -53,7 +63,7 @@ class LLMBackend:
                     {"role": "user", "content": user_prompt},
                 ],
             )
-            return resp.choices[0].message.content
+            return self._strip_fences(resp.choices[0].message.content)
 
         elif self.backend == "anthropic":
             msg = self._get_client().messages.create(
@@ -62,7 +72,7 @@ class LLMBackend:
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
             )
-            return msg.content[0].text
+            return self._strip_fences(msg.content[0].text)
 
         elif self.backend == "openai":
             resp = self._get_client().chat.completions.create(
@@ -73,4 +83,4 @@ class LLMBackend:
                     {"role": "user", "content": user_prompt},
                 ],
             )
-            return resp.choices[0].message.content
+            return self._strip_fences(resp.choices[0].message.content)

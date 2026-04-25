@@ -38,7 +38,7 @@ class BaselineArbitratorAgent:
     This ensures the comparison is fair: trained model learns through RL, not prompting.
     """
 
-    def __init__(self, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, backend: str = "anthropic", model_name: str = "claude-haiku-4-5-20251001"):
         self.llm = LLMBackend(backend=backend, model_name=model_name)
 
     def _build_user_prompt(self, observation: dict) -> str:

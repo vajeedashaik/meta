@@ -1,5 +1,6 @@
 import json
 import random
+from collections import Counter
 from typing import Optional, Tuple
 
 from viral_script_engine.agents.critic import CriticAgent
@@ -33,16 +34,23 @@ class ViralScriptEnv:
         difficulty: str = "easy",
         use_anti_gaming: bool = True,
         cultural_kb_path: str = "data/cultural_kb.json",
+        use_escalation: bool = True,
+        difficulty_tracker=None,
+        escalation_engine=None,
     ):
         self.max_steps = max_steps
         self.difficulty = difficulty
         self.use_anti_gaming = use_anti_gaming
+        self.use_escalation = use_escalation
 
         with open(scripts_path) as f:
             all_scripts = json.load(f)
 
-        tier_ids = _TIERS[difficulty]
+        tier_ids = _TIERS.get(difficulty, [])
         self._scripts = [s for s in all_scripts if s["script_id"] in tier_ids]
+        if not self._scripts:
+            self._scripts = all_scripts
+
         self.critic = CriticAgent()
         self.defender = DefenderAgent()
         self.rewriter = RewriterAgent()
@@ -54,11 +62,66 @@ class ViralScriptEnv:
         self.aggregator = RewardAggregator()
         self._state: Optional[EpisodeState] = None
 
+        if use_escalation:
+            if difficulty_tracker is None:
+                from viral_script_engine.escalation.difficulty_tracker import DifficultyTracker
+                difficulty_tracker = DifficultyTracker()
+            if escalation_engine is None:
+                from viral_script_engine.escalation.critic_escalation_engine import CriticEscalationEngine
+                escalation_engine = CriticEscalationEngine()
+
+        self.difficulty_tracker = difficulty_tracker
+        self.escalation_engine = escalation_engine
+
+        # Track first-step critic output per episode for dominant class detection
+        self._first_critique = None
+
+    def reset_from_config(self, episode_config: dict) -> Tuple[dict, dict]:
+        """Reset the environment to a specific episode config from curriculum JSONL."""
+        script = {
+            "script_id": episode_config.get("script_id", "unknown"),
+            "script_text": episode_config["script_text"],
+            "region": episode_config["region"],
+            "platform": episode_config["platform"],
+            "niche": episode_config["niche"],
+        }
+        return self._reset_with_script(script, episode_config.get("difficulty", self.difficulty))
+
     def reset(self, seed=None, options=None) -> Tuple[dict, dict]:
         if seed is not None:
             random.seed(seed)
-        script = random.choice(self._scripts)
 
+        self._first_critique = None
+        used_escalation = False
+
+        if self.use_escalation and self.difficulty_tracker and self.escalation_engine:
+            mastered = self.difficulty_tracker.get_mastered_classes()
+            if mastered:
+                challenge = self.escalation_engine.get_next_challenge(self.difficulty_tracker)
+                if challenge is None:
+                    # Generate a new escalated challenge from the first mastered class
+                    src_class = mastered[0]
+                    example_script = random.choice(self._scripts)
+                    challenge = self.escalation_engine.escalate(
+                        mastered_class=src_class,
+                        original_script_example=example_script["script_text"],
+                        region=example_script.get("region", "pan_india_english"),
+                        platform=example_script.get("platform", "Reels"),
+                    )
+
+                script = challenge.to_script_dict()
+                print(f"[ESCALATION] Using self-generated challenge for class '{challenge.source_class}' — {challenge.why_its_harder}")
+                obs, info = self._reset_with_script(script, "self_generated")
+                info["escalation_used"] = True
+                info["escalation_source_class"] = challenge.source_class
+                return obs, info
+
+        script = random.choice(self._scripts)
+        obs, info = self._reset_with_script(script, self.difficulty)
+        info["escalation_used"] = False
+        return obs, info
+
+    def _reset_with_script(self, script: dict, difficulty: str) -> Tuple[dict, dict]:
         r1_result = self.r1.score(script["script_text"])
         r2_result = self.r2.score(script["script_text"], script["script_text"])
         r3_result = self.r3.score(script["script_text"], script.get("region", "pan_india_english"))
@@ -72,7 +135,7 @@ class ViralScriptEnv:
         self._state = EpisodeState.new(
             script=script,
             max_steps=self.max_steps,
-            difficulty_level=self.difficulty,
+            difficulty_level=difficulty,
             initial_rewards=initial_rewards,
         )
         return self._build_observation().model_dump(), {}
@@ -89,6 +152,10 @@ class ViralScriptEnv:
             platform=self._state.platform,
             niche=self._state.niche,
         )
+
+        # Track first critique for dominant class detection at episode end
+        if self._state.step_num == 0:
+            self._first_critique = critique
 
         defender_output = self.defender.defend(
             script=self._state.current_script,
@@ -169,6 +236,16 @@ class ViralScriptEnv:
             self._state.step_num >= self._state.max_steps
             or components.total >= 0.9
         )
+
+        if terminated and self.use_escalation and self.difficulty_tracker:
+            dominant_class = self._get_dominant_critique_class()
+            r4_score = components.r4_debate_resolution if components.r4_debate_resolution is not None else 0.0
+            self.difficulty_tracker.record_episode(
+                dominant_critique_class=dominant_class,
+                r4_score=r4_score,
+                episode_id=self._state.episode_id,
+            )
+
         info = {
             "reward_components": components.model_dump(),
             "anti_gaming_triggered": anti_log.triggered,
@@ -176,6 +253,13 @@ class ViralScriptEnv:
             "anti_gaming_log": anti_log.model_dump(),
         }
         return self._build_observation().model_dump(), components.total, terminated, False, info
+
+    def _get_dominant_critique_class(self) -> str:
+        """Return the most common critique_class from the first episode critique."""
+        if self._first_critique is None or not self._first_critique.claims:
+            return "hook_weakness"
+        counts = Counter(c.critique_class for c in self._first_critique.claims)
+        return counts.most_common(1)[0][0]
 
     def state(self) -> dict:
         if self._state is None:

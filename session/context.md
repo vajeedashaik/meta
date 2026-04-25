@@ -1,51 +1,40 @@
 # Context — Carry Over for Next Session
 
-## Purpose
-Read this file at every session start after index.md and phase-log.md.
-Contains only what Claude needs to resume without re-reading everything.
-Overwrite when context changes. Keep it minimal and current.
-
----
-
 ## Current Phase
-Phase: [number]
-Prompt file: prompts/phase-X.md
-Status: [in progress / complete / blocked]
+Phase: 4
+Prompt file: prompts/phase-4.md
+Status: complete
 
 ---
 
 ## Currently Working On
-Feature: [name]
-File(s): [list]
-Status: [what is done, what is not]
+Feature: Phase 5 (when ready)
+File(s): N/A
+Status: Phase 4 complete. Awaiting user confirmation to proceed to Phase 5.
 
 ---
 
 ## Open Questions
-
-[question that needs user input before proceeding]
-[question that needs user input before proceeding]
-
+What does Phase 5 involve? Check prompts/phase-5.md.
+Should full GRPO training run before Phase 5?
 
 ---
 
 ## Known Blockers
-
-[what is blocked and why]
-
+pyarrow DLL blocked on Windows — all training must run on Linux/Colab
+Escalation mastery requires trained model (r4 >= 0.8 x3 consecutive) — untrained baseline won't trigger
 
 ---
 
 ## Last Commit Message
-[most recent commit message generated]
+feat(phase4): critic escalation engine, difficulty tracker, env wiring, gate PASS
 
 ---
 
 ## Do Not Forget
-
-[critical thing to remember for next session]
-[critical thing to remember for next session]
-
+Phase 4 demo patches r2/r5 at top of run_escalation_demo.py (Windows workaround)
+Escalation only activates when DifficultyTracker sees 3 consecutive r4 >= 0.8 for any critique class
+Run `python scripts/run_escalation_demo.py --episodes 50 --verbose` to see escalation in action post-training
 
 ---
 

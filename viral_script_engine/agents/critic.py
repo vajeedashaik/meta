@@ -67,19 +67,53 @@ class CritiqueOutput(BaseModel):
 
 
 class CriticAgent:
-    def __init__(self, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, backend: str = "anthropic", model_name: str = "claude-haiku-4-5-20251001"):
         self.llm = LLMBackend(backend=backend, model_name=model_name)
+
+    @staticmethod
+    def _extract_json(text: str) -> dict:
+        import re
+        text = text.strip()
+        text = re.sub(r"^```(?:json)?", "", text).strip()
+        text = re.sub(r"```$", "", text).strip()
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+        start = text.find("{")
+        if start != -1:
+            depth, in_str, esc = 0, False, False
+            for i, c in enumerate(text[start:], start):
+                if esc:
+                    esc = False
+                    continue
+                if c == "\\" and in_str:
+                    esc = True
+                    continue
+                if c == '"':
+                    in_str = not in_str
+                elif not in_str:
+                    if c == "{":
+                        depth += 1
+                    elif c == "}":
+                        depth -= 1
+                        if depth == 0:
+                            try:
+                                return json.loads(text[start : i + 1])
+                            except json.JSONDecodeError:
+                                break
+        raise ValueError(f"No valid JSON found in response: {text[:200]}")
 
     def _parse_response(self, raw: str, user_prompt: str) -> CritiqueOutput:
         try:
-            data = json.loads(raw)
+            data = self._extract_json(raw)
             data["raw_response"] = raw
             return CritiqueOutput(**data)
         except Exception:
             strict_prompt = user_prompt + STRICT_RETRY_SUFFIX
             raw2 = self.llm.generate(SYSTEM_PROMPT, strict_prompt, max_tokens=2048)
             try:
-                data = json.loads(raw2)
+                data = self._extract_json(raw2)
                 data["raw_response"] = raw2
                 return CritiqueOutput(**data)
             except Exception as e:

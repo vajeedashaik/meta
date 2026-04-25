@@ -19,7 +19,7 @@ class RewriteResult(BaseModel):
 
 
 class RewriterAgent:
-    def __init__(self, backend: str = "groq", model_name: str = "llama-3.3-70b-versatile"):
+    def __init__(self, backend: str = "anthropic", model_name: str = "claude-haiku-4-5-20251001"):
         self.llm = LLMBackend(backend=backend, model_name=model_name)
 
     def rewrite(self, current_script: str, action: ArbitratorAction) -> RewriteResult:
