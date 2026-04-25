@@ -1,12 +1,9 @@
 import json
-import os
 from typing import List
 
-import anthropic
-from dotenv import load_dotenv
 from pydantic import BaseModel
 
-load_dotenv()
+from viral_script_engine.agents.llm_backend import LLMBackend
 
 SYSTEM_PROMPT = """You are an expert social media content critic specialising in short-form video scripts for Reels and YouTube Shorts. Your job is to find specific, real problems in creator scripts — not vague feedback.
 
@@ -70,27 +67,17 @@ class CritiqueOutput(BaseModel):
 
 
 class CriticAgent:
-    def __init__(self, model_name: str = "claude-sonnet-4-20250514"):
-        self.model_name = model_name
-        self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    def __init__(self, backend: str = "qwen", model_name: str = "Qwen/Qwen2.5-7B-Instruct"):
+        self.llm = LLMBackend(backend=backend, model_name=model_name)
 
-    def _call_api(self, user_content: str) -> str:
-        message = self.client.messages.create(
-            model=self.model_name,
-            max_tokens=2048,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
-        )
-        return message.content[0].text
-
-    def _parse_response(self, raw: str, user_content: str) -> CritiqueOutput:
+    def _parse_response(self, raw: str, user_prompt: str) -> CritiqueOutput:
         try:
             data = json.loads(raw)
             data["raw_response"] = raw
             return CritiqueOutput(**data)
         except Exception:
-            strict_content = user_content + STRICT_RETRY_SUFFIX
-            raw2 = self._call_api(strict_content)
+            strict_prompt = user_prompt + STRICT_RETRY_SUFFIX
+            raw2 = self.llm.generate(SYSTEM_PROMPT, strict_prompt, max_tokens=2048)
             try:
                 data = json.loads(raw2)
                 data["raw_response"] = raw2
@@ -99,8 +86,8 @@ class CriticAgent:
                 raise CriticParseError(f"Failed to parse critique after 2 attempts: {e}")
 
     def critique(self, script: str, region: str, platform: str, niche: str) -> CritiqueOutput:
-        user_content = USER_PROMPT_TEMPLATE.format(
+        user_prompt = USER_PROMPT_TEMPLATE.format(
             script=script, region=region, platform=platform, niche=niche
         )
-        raw = self._call_api(user_content)
-        return self._parse_response(raw, user_content)
+        raw = self.llm.generate(SYSTEM_PROMPT, user_prompt, max_tokens=2048)
+        return self._parse_response(raw, user_prompt)

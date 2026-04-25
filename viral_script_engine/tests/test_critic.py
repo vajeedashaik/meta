@@ -1,9 +1,16 @@
 import json
-import pytest
-from unittest.mock import MagicMock, patch
+import os
+import subprocess
+import sys
 
-from viral_script_engine.agents.critic import CritiqueClaim, CritiqueOutput
+import pytest
+from unittest.mock import patch
+
+from viral_script_engine.agents.critic import CritiqueClaim, CritiqueOutput, CriticAgent, CriticParseError
 from viral_script_engine.evaluation.critic_evaluator import CriticEvaluator, EvaluationResult
+from tests.conftest import MOCK_VALID_RESPONSE
+
+MOCK_INVALID_RESPONSE = "Here is my feedback: The hook is weak and the CTA is missing."
 
 
 # ── Task 2: Model parsing tests ───────────────────────────────────────────────
@@ -91,11 +98,6 @@ def test_evaluator_fails_low_specificity():
 
 # ── Task 5: CLI exit-code test ────────────────────────────────────────────────
 
-import os
-import subprocess
-import sys
-
-
 def test_cli_dry_run_exits_zero_or_one():
     """CLI must exit 0 (pass) or 1 (fail) — never crash with unhandled exception."""
     result = subprocess.run(
@@ -103,7 +105,7 @@ def test_cli_dry_run_exits_zero_or_one():
         capture_output=True,
         text=True,
         cwd=str(__import__("pathlib").Path(__file__).parent.parent),
-        env={**os.environ, "ANTHROPIC_API_KEY": "sk-fake-key-for-test"},
+        env={**os.environ},
     )
     assert result.returncode in (0, 1), (
         f"Unexpected exit code: {result.returncode}\nSTDERR: {result.stderr}"
@@ -112,65 +114,37 @@ def test_cli_dry_run_exits_zero_or_one():
 
 # ── Task 6: Mocked CriticAgent tests ─────────────────────────────────────────
 
-from viral_script_engine.agents.critic import CriticAgent, CriticParseError
-
-MOCK_VALID_JSON = json.dumps({
-    "claims": [
-        {"claim_id": "C1", "critique_class": "hook_weakness", "claim_text": "Weak hook.", "timestamp_range": "0:00-0:03", "evidence": "Let me tell you a secret", "is_falsifiable": True, "severity": "high"},
-        {"claim_id": "C2", "critique_class": "cta_buried", "claim_text": "CTA at end.", "timestamp_range": "0:45-0:50", "evidence": "Like and save this video", "is_falsifiable": True, "severity": "medium"},
-        {"claim_id": "C3", "critique_class": "pacing_issue", "claim_text": "Pacing issue.", "timestamp_range": "N/A", "evidence": "save twenty percent", "is_falsifiable": True, "severity": "low"},
-    ],
-    "overall_severity": "high",
-})
-
-MOCK_INVALID_JSON = "Here is my feedback: The hook is weak and the CTA is missing."
-
-
-@patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test"})
-@patch("viral_script_engine.agents.critic.anthropic.Anthropic")
-def test_critic_agent_returns_critique_output(mock_anthropic_cls):
-    mock_client = MagicMock()
-    mock_anthropic_cls.return_value = mock_client
-    mock_msg = MagicMock()
-    mock_msg.content = [MagicMock(text=MOCK_VALID_JSON)]
-    mock_client.messages.create.return_value = mock_msg
-
-    agent = CriticAgent()
+def test_critic_agent_returns_critique_output(mock_llm):
+    agent = CriticAgent(backend="qwen")
     result = agent.critique("Some script text here", "Mumbai", "Reels", "finance")
-
     assert len(result.claims) == 3
     assert result.claims[0].claim_id == "C1"
     assert result.overall_severity == "high"
-    assert mock_client.messages.create.call_count == 1
 
 
-@patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test"})
-@patch("viral_script_engine.agents.critic.anthropic.Anthropic")
-def test_critic_agent_retries_on_bad_json(mock_anthropic_cls):
-    mock_client = MagicMock()
-    mock_anthropic_cls.return_value = mock_client
-    bad_msg = MagicMock()
-    bad_msg.content = [MagicMock(text=MOCK_INVALID_JSON)]
-    good_msg = MagicMock()
-    good_msg.content = [MagicMock(text=MOCK_VALID_JSON)]
-    mock_client.messages.create.side_effect = [bad_msg, good_msg]
+def test_critic_agent_retries_on_bad_json(monkeypatch):
+    calls = []
 
-    agent = CriticAgent()
+    def fake_generate(self, sys_prompt, usr_prompt, **kw):
+        calls.append(usr_prompt)
+        if len(calls) == 1:
+            return MOCK_INVALID_RESPONSE
+        return MOCK_VALID_RESPONSE
+
+    monkeypatch.setattr(
+        "viral_script_engine.agents.llm_backend.LLMBackend.generate", fake_generate
+    )
+    agent = CriticAgent(backend="qwen")
     result = agent.critique("Some script text here", "Mumbai", "Reels", "finance")
     assert len(result.claims) == 3
-    assert mock_client.messages.create.call_count == 2
+    assert len(calls) == 2
 
 
-@patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test"})
-@patch("viral_script_engine.agents.critic.anthropic.Anthropic")
-def test_critic_agent_raises_parse_error_after_two_failures(mock_anthropic_cls):
-    mock_client = MagicMock()
-    mock_anthropic_cls.return_value = mock_client
-    bad_msg = MagicMock()
-    bad_msg.content = [MagicMock(text=MOCK_INVALID_JSON)]
-    mock_client.messages.create.return_value = bad_msg
-
-    agent = CriticAgent()
+def test_critic_agent_raises_parse_error_after_two_failures(monkeypatch):
+    monkeypatch.setattr(
+        "viral_script_engine.agents.llm_backend.LLMBackend.generate",
+        lambda self, sys_prompt, usr_prompt, **kw: MOCK_INVALID_RESPONSE,
+    )
+    agent = CriticAgent(backend="qwen")
     with pytest.raises(CriticParseError):
         agent.critique("Some script text here", "Mumbai", "Reels", "finance")
-    assert mock_client.messages.create.call_count == 2
