@@ -13,40 +13,39 @@ One session = one summary. Previous summaries live in phase-log.md.
 2026-04-26
 
 ### Phase
-Phase 9 — Multi-Platform Reward Divergence
+Phase 12 — Retention Curve Simulator
 
 ### What Was Done
-- Created platforms/__init__.py, platform_kb.json, platform_spec.py — PlatformRegistry single source of truth for all 4 platforms
-- Updated rewards/r1_hook_strength.py — platform-aware hook scoring via PlatformRegistry; new length_fit check (6th check, 15% weight)
-- Updated rewards/r2_coherence.py — platform length penalty (max 0.3 cap) applied after semantic similarity score
-- Created rewards/r9_platform_pacing.py — PlatformPacingReward; 3 checks: pacing (40%), section ratio (40%), CTA position (20%)
-- Updated environment/observations.py — r9_platform_pacing in RewardComponents; updated _WEIGHTS to 9-reward spec
-- Updated rewards/reward_aggregator.py — r9_platform_pacing added to anti-gaming _COMPONENT_FIELDS
-- Updated environment/env.py — R9 wired in step(); _current_platform stored on reset(); platform passed to R1/R2
-- Updated curriculum JSONL files — added Feed entries: easy (+2), medium (+3), hard (+4 cross-platform)
-- Updated demo/run_demo.py — Act 1 shows platform spec (hook window, max length, pacing); Act 5 shows R9 row
-- Created tests/test_phase9.py — 20 tests, all passing
-- Created scripts/run_dummy_episode.py — LLM-stubbed gate check; Phase 9 GATE: PASS
-- Created scripts/run_platform_comparison.py — S03 scored on Reels/Shorts/Feed; all 3 rewards diverge; GATE: PASS
+- Created viral_script_engine/retention/__init__.py — package init
+- Created viral_script_engine/retention/feature_extractor.py — ScriptFeatures pydantic model (14 features + platform one-hot); FeatureExtractor.extract() — zero LLM calls, structural analysis
+- Created viral_script_engine/retention/training_data/__init__.py — package init
+- Created viral_script_engine/retention/training_data/build_dataset.py — 150 rule-based samples (50 high/medium/low); monotonic curve generation from R1/R2/R3 scores
+- Created viral_script_engine/retention/training_data/retention_dataset.json — 150 samples generated
+- Created viral_script_engine/retention/curve_predictor.py — RetentionCurvePredictor (MultiOutputRegressor+GBR); RetentionCurve model with AUC + drop-off; train/predict; monotonic enforcement
+- Created viral_script_engine/retention/model.joblib — trained model, avg MAE 0.031
+- Created viral_script_engine/retention/curve_scorer.py — RetentionCurveScorer; ACTION_CURVE_MAP; overall+targeted+regression formula
+- Created viral_script_engine/rewards/r10_retention_curve.py — RetentionCurveReward; episode-level original curve caching
+- Updated viral_script_engine/environment/observations.py — r10_retention_curve field; updated _WEIGHTS to 10-reward spec
+- Updated viral_script_engine/rewards/reward_aggregator.py — r10_retention_curve in anti-gaming _COMPONENT_FIELDS
+- Updated viral_script_engine/environment/env.py — R10 wired in __init__() and step(); graceful skip if model not trained
+- Created scripts/train_retention_model.py — one-time training script; builds dataset if missing; prints MAE
+- Updated demo/run_demo.py — _render_retention_ascii(); _show_retention_curves() ASCII panel in Act 5; R10 row in reward table
+- Updated scripts/run_dummy_episode.py — R10 check in gate assertions; Phase 12 GATE message
+- Created viral_script_engine/tests/test_phase12.py — 14 tests, all passing
+- Phase 12 gate: PASS
 
 ### What Was NOT Done (carry over)
 - Real GRPO training — requires GPU (Colab)
 
 ### Errors Encountered
-- test_short_hook_passes_length_fit_on_reels: hook was ~18 words (exceeded Reels 15-word limit) — fixed test script
-- test_penalty_capped_at_0_3: compared semantically different scripts (base sim=0) — fixed to use same-vocab scripts
-- test_same_script_scores_differently_on_reels_vs_feed: _SLOW_SCRIPT both pacing+ratio zeroed out on both platforms — switched to sub-score comparison
-- test_env_r9_fires_in_step: defender.defend() not patched → API call — patched defender with full MagicMock
-- run_dummy_episode.py: R5 needs core_strength_quote from defender mock — added all required fields
-- run_platform_comparison.py: Unicode bar chars fail on Windows cp1252 — switched to ASCII #/.
+- None; all 14 tests passed on first run
 
 ### Tests Status
-Phase 9: 20 passed
-Gate check (dummy episode): PASS
-Gate check (platform comparison S03): PASS — R1/R2/R9 all diverge across Reels/Shorts/Feed
+Phase 12: 14 passed
+Gate check: PHASE 12 GATE: PASS — Retention curve predictor active. R10 firing.
 
 ### Commit Messages Generated
-feat(phase9): platform reward divergence — PlatformRegistry, R9 PlatformPacing, R1/R2 platform-aware, 20 tests PASS, gate PASS
+feat(phase12): RetentionCurveSimulator, R10, 150-sample dataset, model trained, 14 tests PASS, gate PASS
 
 ---
 

@@ -12,6 +12,7 @@ _COMPONENT_FIELDS = [
     "r1_hook_strength", "r2_coherence", "r3_cultural_alignment",
     "r4_debate_resolution", "r5_defender_preservation",
     "r6_safety", "r7_originality", "r8_persona_fit", "r9_platform_pacing",
+    "r10_retention_curve",
 ]
 
 _DROP_THRESHOLD = 0.25

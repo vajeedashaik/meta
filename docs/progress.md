@@ -152,6 +152,23 @@ Do not read entire codebase to understand progress — read this file.
 ✅ test_phase11.py — 24 tests, all passing
 ✅ Phase 11 gate — PHASE 11 GATE: PASS, 6 sessions completed, trend: plateauing
 
+## Phase 12 — Retention Curve Simulator
+✅ ScriptFeatures + FeatureExtractor — 14 structural features extracted; platform one-hot; zero LLM calls
+✅ build_dataset.py + retention_dataset.json — 150 rule-based samples (50 high/medium/low); monotonic curve generation
+✅ RetentionCurvePredictor — MultiOutputRegressor(GBR); 10-point curve; train/predict; monotonic enforcement; avg MAE 0.031
+✅ RetentionCurve model — timepoints, values, AUC (trapezoidal), drop_off_point
+✅ retention/model.joblib — trained model saved
+✅ RetentionCurveScorer — ACTION_CURVE_MAP; overall+targeted+regression formula; CurveScorerResult
+✅ RetentionCurveReward (R10) — wraps extractor+predictor+scorer; episode-level original curve cache
+✅ observations.py — r10_retention_curve in RewardComponents; _WEIGHTS updated to 10-reward spec
+✅ reward_aggregator.py — r10_retention_curve in anti-gaming _COMPONENT_FIELDS
+✅ env.py — R10 wired in __init__() and step(); graceful skip if model not trained
+✅ scripts/train_retention_model.py — one-time training; builds dataset if missing; prints MAE
+✅ demo/run_demo.py — ASCII retention curve in Act 5; R10 row in reward table
+✅ scripts/run_dummy_episode.py — R10 gate assertion; Phase 12 GATE message
+✅ test_phase12.py — 14 tests, all passing
+✅ Phase 12 gate — PHASE 12 GATE: PASS, R10 firing
+
 ## Blocked Items
 ❌ GRPOConfig test — blocked by: pyarrow DLL blocked by Windows App Control (works on Linux/Colab)
 ❌ Full GRPO training — blocked by: no local GPU (requires Colab or cloud compute)

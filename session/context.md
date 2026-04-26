@@ -1,21 +1,21 @@
 # Context — Carry Over for Next Session
 
 ## Current Phase
-Phase: 10
-Prompt file: prompts/phase-10.md
+Phase: 12
+Prompt file: prompts/phase-12.md
 Status: complete
 
 ---
 
 ## Currently Working On
-Feature: Phase 10 complete. Awaiting user confirmation to proceed to next phase (if any).
+Feature: Phase 12 complete. Awaiting user confirmation to proceed to next phase (if any).
 File(s): N/A
-Status: All 25 tests pass. Gate script prints PHASE 10 GATE: PASS.
+Status: All 14 tests pass. Gate script prints PHASE 12 GATE: PASS.
 
 ---
 
 ## Open Questions
-Is there a Phase 11? Check if prompts/phase-11.md exists.
+Is there a Phase 13? Check if prompts/phase-13.md exists.
 
 ---
 
@@ -27,15 +27,16 @@ Full GRPO training requires Colab or cloud GPU
 ---
 
 ## Last Commit Message
-feat(phase10): ABScriptEnv, ContrastiveReward, A/B rollout, 25 tests PASS, gate PASS
+feat(phase12): RetentionCurveSimulator, R10, 150-sample dataset, model trained, 14 tests PASS, gate PASS
 
 ---
 
 ## Do Not Forget
-ABScriptEnv.reset() runs forced step 1 automatically — step 2+ are free choice
-Contrastive reward formula: base_reward + tanh(delta*3)*0.2, clipped [0,1]
-Cumulative reward is sum of per-step totals — clips to 1.0 with 4+ steps at high score
-Gate check: python scripts/run_ab_episode.py --script S08 --steps 4 --verbose
+R10 requires trained model — run python scripts/train_retention_model.py first
+RetentionCurvePredictor model saved at viral_script_engine/retention/model.joblib
+MODEL_PATH is Path(__file__).parent / "model.joblib" (relative to curve_predictor.py)
+R10 gracefully skips (score=None) in env.step() if model not trained
+Gate check: python scripts/run_dummy_episode.py --difficulty easy --steps 3 --verbose
 
 ---
 

@@ -283,7 +283,77 @@ def act4_arbitrator_decides(
     console.print()
 
 
-def act5_rewrite_and_reward(original_script: str, rewritten_script: str, reward_components: dict, baseline_total: float):
+def _retention_ascii_row(level_pct: int, values: list, timepoints: list) -> str:
+    """Render one horizontal row of the ASCII retention chart."""
+    threshold = level_pct / 100
+    bar = ""
+    for v in values:
+        bar += "██" if v >= threshold else "  "
+    label = f"{level_pct:4d}% |"
+    return f"{label}{bar}"
+
+
+def _render_retention_ascii(values: list, timepoints: list, label: str) -> str:
+    """Render a compact ASCII bar chart of a retention curve."""
+    rows = []
+    rows.append(f"  {label}")
+    for level in [100, 75, 50, 25]:
+        rows.append(_retention_ascii_row(level, values, timepoints))
+    # x-axis
+    axis = "       +" + "--" * len(timepoints)
+    tick_labels = "        " + " ".join(f"{t:<2}" for t in timepoints)
+    rows.append(axis)
+    rows.append(tick_labels + "s")
+    return "\n".join(rows)
+
+
+def _show_retention_curves(
+    orig_values: list,
+    new_values: list,
+    timepoints: list,
+    orig_auc: float,
+    new_auc: float,
+    orig_drop: int,
+    new_drop: int,
+) -> None:
+    """Render before/after retention curves as ASCII art in a panel."""
+    before_chart = _render_retention_ascii(orig_values, timepoints, "Before rewrite:")
+    after_chart = _render_retention_ascii(new_values, timepoints, "After rewrite:")
+
+    auc_delta = new_auc - orig_auc
+    auc_pct = (auc_delta / orig_auc * 100) if orig_auc > 0 else 0.0
+    sign = "+" if auc_delta >= 0 else ""
+
+    drop_line = (
+        f"Drop-off point: {orig_drop}s -> {new_drop}s"
+        if new_drop != orig_drop
+        else f"Drop-off point: {orig_drop}s (unchanged)"
+    )
+
+    body = (
+        f"{before_chart}\n\n"
+        f"{after_chart}\n\n"
+        f"Improvement: AUC {orig_auc:.2f} -> {new_auc:.2f} ({sign}{auc_pct:.0f}%)\n"
+        f"{drop_line}"
+    )
+    console.print(Panel(
+        body,
+        title="[cyan]PREDICTED RETENTION CURVE[/cyan]",
+        border_style="cyan",
+        padding=(1, 2),
+    ))
+    console.print()
+
+
+def act5_rewrite_and_reward(
+    original_script: str,
+    rewritten_script: str,
+    reward_components: dict,
+    baseline_total: float,
+    platform: str = "Reels",
+    region: str = "pan_india_english",
+    action_type: str = "hook_rewrite",
+):
     console.print(Rule("[bold magenta]ACT 5 — THE REWRITE + REWARD[/bold magenta]", style="magenta"))
 
     diff_text = Text()
@@ -303,6 +373,30 @@ def act5_rewrite_and_reward(original_script: str, rewritten_script: str, reward_
 
     console.print()
 
+    # Phase 12: retention curve visualisation
+    try:
+        from viral_script_engine.retention.feature_extractor import FeatureExtractor
+        from viral_script_engine.retention.curve_predictor import RetentionCurvePredictor
+        from viral_script_engine.retention.curve_scorer import RetentionCurveScorer
+        extractor = FeatureExtractor()
+        predictor = RetentionCurvePredictor()
+        if predictor._trained:
+            orig_feat = extractor.extract(original_script, platform, region)
+            new_feat = extractor.extract(rewritten_script, platform, region)
+            orig_curve = predictor.predict(orig_feat)
+            new_curve = predictor.predict(new_feat)
+            _show_retention_curves(
+                orig_values=orig_curve.values,
+                new_values=new_curve.values,
+                timepoints=orig_curve.timepoints,
+                orig_auc=orig_curve.area_under_curve,
+                new_auc=new_curve.area_under_curve,
+                orig_drop=orig_curve.drop_off_point,
+                new_drop=new_curve.drop_off_point,
+            )
+    except Exception:
+        pass
+
     labels = {
         "r1_hook_strength": "R1 Hook Strength",
         "r2_coherence": "R2 Coherence",
@@ -310,6 +404,7 @@ def act5_rewrite_and_reward(original_script: str, rewritten_script: str, reward_
         "r4_debate_resolution": "R4 Resolution",
         "r5_defender_preservation": "R5 Preservation",
         "r9_platform_pacing": "R9 Platform Pacing",
+        "r10_retention_curve": "R10 Retention Curve",
     }
 
     table = Table(box=box.SIMPLE_HEAD, show_header=False, padding=(0, 1))
@@ -550,10 +645,14 @@ def run_compare(script_id: str):
         "total": (new_r1 + new_r2 + new_r3 + new_r5) / 4,
     }
 
-    act5_rewrite_and_reward(current_script, new_script, reward_components, baseline_total)
+    act5_rewrite_and_reward(
+        current_script, new_script, reward_components, baseline_total,
+        platform=platform, region=region,
+        action_type=str(arb_action.action_type.value),
+    )
 
     console.print(Panel(
-        "[bold green]Demo complete.[/bold green] The Trained Arbitrator's richer reasoning produced "
+        "[bold green]Demo complete.[/bold green] The Trained Arbitrator's richer reasoning produced"
         "a more targeted rewrite. Run [bold]python training/train_grpo.py[/bold] in Colab to "
         "train the Arbitrator with GRPO and see real improvement curves.",
         border_style="green",
@@ -647,7 +746,11 @@ def run_interactive():
             "total": (new_r1 + new_r2 + new_r3 + new_r5) / 4,
         }
 
-        act5_rewrite_and_reward(current_script, new_script, reward_components, baseline_total)
+        act5_rewrite_and_reward(
+            current_script, new_script, reward_components, baseline_total,
+            platform=platform, region=region,
+            action_type=str(arb_action.action_type.value),
+        )
         current_script = new_script
 
         again = input("Continue to next step? [y/n]: ").strip().lower()

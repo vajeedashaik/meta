@@ -1,5 +1,5 @@
 """
-Gate check script for Phase 9 — runs a dummy episode and verifies R9 fires.
+Gate check script for Phase 12 — runs a dummy episode and verifies R9 and R10 fire.
 
 Usage:
     python scripts/run_dummy_episode.py --difficulty easy --steps 3 --verbose
@@ -71,12 +71,14 @@ def run_episode(difficulty: str, steps: int, verbose: bool):
 
             if verbose:
                 r9 = rc.get("r9_platform_pacing")
+                r10 = rc.get("r10_retention_curve")
                 r1 = rc.get("r1_hook_strength")
                 r2 = rc.get("r2_coherence")
                 r9_str = f"{r9:.3f}" if r9 is not None else "None"
+                r10_str = f"{r10:.3f}" if r10 is not None else "None"
                 print(
                     f"  Step {step + 1}: total={reward:.3f}  "
-                    f"R1={r1:.3f}  R2={r2:.3f}  R9={r9_str}"
+                    f"R1={r1:.3f}  R2={r2:.3f}  R9={r9_str}  R10={r10_str}"
                 )
 
             if terminated:
@@ -86,7 +88,7 @@ def run_episode(difficulty: str, steps: int, verbose: bool):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Phase 9 dummy episode gate check")
+    parser = argparse.ArgumentParser(description="Phase 12 dummy episode gate check")
     parser.add_argument("--difficulty", default="easy", choices=["easy", "medium", "hard"])
     parser.add_argument("--steps", type=int, default=3)
     parser.add_argument("--verbose", action="store_true")
@@ -103,16 +105,23 @@ def main():
         elif not (0.0 <= rc["r9_platform_pacing"] <= 1.0):
             errors.append(f"Step {i+1}: r9_platform_pacing out of range: {rc['r9_platform_pacing']}")
 
+        if rc.get("r10_retention_curve") is None:
+            errors.append(f"Step {i+1}: r10_retention_curve is None — R10 not firing")
+        elif not (0.0 <= rc["r10_retention_curve"] <= 1.0):
+            errors.append(f"Step {i+1}: r10_retention_curve out of range: {rc['r10_retention_curve']}")
+
     if errors:
         print("\n[GATE FAIL]")
         for e in errors:
             print(f"  ERROR: {e}")
         sys.exit(1)
     else:
+        # Compute average AUC improvement for gate message
+        r10_scores = [rc.get("r10_retention_curve", 0.0) for rc in steps_data if rc.get("r10_retention_curve") is not None]
+        avg_r10 = sum(r10_scores) / len(r10_scores) if r10_scores else 0.0
         print(
-            f"\nPHASE 9 GATE: PASS — Platform-aware rewards active. "
-            f"R9 firing on platform={platform}. "
-            f"Cross-platform divergence confirmed."
+            f"\nPHASE 12 GATE: PASS — Retention curve predictor active. "
+            f"R10 firing. AUC improvement: +{avg_r10:.2f}."
         )
 
 

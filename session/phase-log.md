@@ -30,6 +30,7 @@ ROLLED BACK — changes reverted, reason in line
 [2026-04-26] [Phase 9] COMPLETE — PlatformRegistry, R9 PlatformPacing, R1/R2 platform-aware, 20 tests PASS, gate PASS
 [2026-04-26] [Phase 10] COMPLETE — ABScriptEnv, ContrastiveReward, A/B rollout fn, 25 tests PASS, gate PASS
 [2026-04-26] [Phase 11] COMPLETE — CreatorHistoryBuffer, MemoryCompressor, HistoryStore, 24 tests PASS, gate PASS
+[2026-04-26] [Phase 12] COMPLETE — RetentionCurveSimulator, R10, 150-sample dataset, model MAE 0.031, 14 tests PASS, gate PASS
 
 ---
 

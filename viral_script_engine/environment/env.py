@@ -30,6 +30,7 @@ from viral_script_engine.rewards.r9_platform_pacing import PlatformPacingReward
 from viral_script_engine.platforms.platform_spec import PlatformRegistry
 from viral_script_engine.memory.memory_compressor import MemoryCompressor
 from viral_script_engine.memory.history_store import HistoryStore
+from viral_script_engine.rewards.r10_retention_curve import RetentionCurveReward
 
 _TIERS = {
     "easy": ["S01", "S02", "S03", "S04"],
@@ -85,6 +86,7 @@ class ViralScriptEnv:
         self.platform_registry = PlatformRegistry()
         self.memory_compressor = MemoryCompressor()
         self.history_store = HistoryStore()
+        self.r10 = RetentionCurveReward(cultural_kb_path=cultural_kb_path)
         self._state: Optional[EpisodeState] = None
         self._current_profile: Optional[CreatorProfile] = None
         self._current_platform: str = "Reels"
@@ -282,6 +284,22 @@ class ViralScriptEnv:
         # Phase 9: compute R9 platform pacing
         r9_result = self.r9.score(new_script, platform=self._current_platform)
 
+        # Phase 12: compute R10 retention curve reward
+        r10_score = None
+        if self.r10.predictor._trained:
+            try:
+                r10_result = self.r10.score(
+                    original_script=self._state.original_script,
+                    rewritten_script=new_script,
+                    platform=self._current_platform,
+                    region=self._state.region,
+                    action_type=str(arb_action.action_type.value),
+                    episode_id=self._state.episode_id,
+                )
+                r10_score = r10_result.score
+            except Exception:
+                r10_score = None
+
         components = RewardComponents(
             r1_hook_strength=r1_result.score,
             r2_coherence=r2_result.score,
@@ -292,6 +310,7 @@ class ViralScriptEnv:
             r7_originality=r7_result.score,
             r8_persona_fit=r8_score,
             r9_platform_pacing=r9_result.score,
+            r10_retention_curve=r10_score,
             process_reward=process_result.weighted_contribution if process_result else None,
         )
 
