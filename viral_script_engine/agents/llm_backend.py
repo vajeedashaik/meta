@@ -2,10 +2,10 @@ import os
 
 
 class LLMBackend:
-    def __init__(self, backend: str = "anthropic", model_name: str = "claude-haiku-4-5-20251001"):
+    def __init__(self, backend: str = "hf", model_name: str = "meta-llama/Llama-2-7b-chat-hf"):
         """
-        backend: "groq" | "qwen" | "anthropic" | "openai"
-        Default: Groq cloud inference — fast, no local GPU needed.
+        backend: "groq" | "qwen" | "anthropic" | "openai" | "hf"
+        Default: HuggingFace Inference API — free tier, no local GPU needed.
         Pipeline/client is lazy-loaded on first generate() call.
         """
         self.backend = backend
@@ -13,8 +13,8 @@ class LLMBackend:
         self._pipe = None
         self._client = None
 
-        if backend not in ("groq", "qwen", "anthropic", "openai"):
-            raise ValueError(f"Unknown backend: {backend!r}. Choose groq | qwen | anthropic | openai")
+        if backend not in ("groq", "qwen", "anthropic", "openai", "hf"):
+            raise ValueError(f"Unknown backend: {backend!r}. Choose groq | qwen | anthropic | openai | hf")
 
     def _get_pipe(self):
         if self._pipe is None:
@@ -33,6 +33,9 @@ class LLMBackend:
             elif self.backend == "openai":
                 from openai import OpenAI
                 self._client = OpenAI()
+            elif self.backend == "hf":
+                from huggingface_hub import InferenceClient
+                self._client = InferenceClient(token=os.environ.get("HF_TOKEN"))
         return self._client
 
     @staticmethod
@@ -45,7 +48,20 @@ class LLMBackend:
                 text = text[:-3].rstrip()
         return text
 
-    def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 512) -> str:
+    def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 512, timeout_seconds: int = 30) -> str:
+        """
+        All LLM calls must complete within timeout_seconds.
+        Raises TimeoutError if exceeded — caller handles gracefully.
+        """
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self._generate_inner, system_prompt, user_prompt, max_tokens)
+            try:
+                return future.result(timeout=timeout_seconds)
+            except concurrent.futures.TimeoutError:
+                raise TimeoutError(f"LLM call timed out after {timeout_seconds}s")
+
+    def _generate_inner(self, system_prompt: str, user_prompt: str, max_tokens: int) -> str:
         if self.backend == "qwen":
             messages = [
                 {"role": "system", "content": system_prompt},
@@ -84,3 +100,15 @@ class LLMBackend:
                 ],
             )
             return self._strip_fences(resp.choices[0].message.content)
+
+        elif self.backend == "hf":
+            full_prompt = f"<s>[INST] {system_prompt}\n\n{user_prompt} [/INST]"
+            try:
+                response = self._get_client().text_generation(
+                    full_prompt,
+                    model=self.model_name,
+                    max_new_tokens=max_tokens,
+                )
+                return self._strip_fences(response)
+            except Exception as e:
+                raise RuntimeError(f"HF Inference API error: {e}")

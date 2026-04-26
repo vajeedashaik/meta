@@ -15,7 +15,9 @@ pytest>=8.0.0
 matplotlib>=3.8.0
 openenv
 
-# Optional — only needed if using non-Qwen backends
+huggingface-hub>=0.17.0
+
+# Optional — only needed if using non-HF backends
 groq>=0.9.0            # only if backend="groq"
 anthropic>=0.40.0      # only if backend="anthropic"
 openai>=1.0.0          # only if backend="openai"

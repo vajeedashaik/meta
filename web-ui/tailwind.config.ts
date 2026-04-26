@@ -10,21 +10,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#f6f9ff",
-        foreground: "#0f172a",
-        primary: "#1877F2",
-        muted: "#eaf2ff",
-        card: "#ffffff",
-        border: "#dbeafe"
+        background: "#09080f",
+        foreground: "#ede9f8",
+        primary: "#8b5cf6",
+        muted: "#1c1730",
+        card: "#120f1e",
+        border: "#2e2255"
+      },
+      fontFamily: {
+        display: ["var(--font-display)", "sans-serif"]
       },
       borderRadius: {
         "2xl": "1rem"
       },
       boxShadow: {
-        soft: "0 10px 30px rgba(24, 119, 242, 0.08)"
+        soft: "0 10px 30px rgba(139, 92, 246, 0.12)"
       },
       backgroundImage: {
-        hero: "radial-gradient(circle at top right, rgba(24,119,242,0.20), transparent 45%), radial-gradient(circle at 15% 20%, rgba(14,165,233,0.15), transparent 40%)"
+        hero: "radial-gradient(circle at top right, rgba(139,92,246,0.12), transparent 50%), radial-gradient(circle at 15% 20%, rgba(109,40,217,0.10), transparent 45%)"
       }
     }
   },

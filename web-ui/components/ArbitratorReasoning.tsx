@@ -3,10 +3,26 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-function ReasoningColumn({ title, lines, highlight }: { title: string; lines: string[]; highlight?: boolean }) {
+function ReasoningColumn({
+  title,
+  lines,
+  highlight,
+}: {
+  title: string;
+  lines: string[];
+  highlight?: boolean;
+}) {
   return (
-    <div className={`rounded-xl border p-4 ${highlight ? "border-blue-200 bg-blue-50/60" : "border-slate-200 bg-white"}`}>
-      <h4 className="mb-3 text-sm font-semibold text-slate-800">{title}</h4>
+    <div
+      className={`rounded-xl border p-4 ${
+        highlight
+          ? "border-violet-600/40 bg-violet-900/30"
+          : "border-purple-800/40 bg-purple-900/20"
+      }`}
+    >
+      <h4 className={`mb-3 text-sm font-semibold ${highlight ? "text-violet-300" : "text-purple-300"}`}>
+        {title}
+      </h4>
       <div className="space-y-2">
         <AnimatePresence mode="wait">
           {lines.map((line, i) => (
@@ -15,7 +31,7 @@ function ReasoningColumn({ title, lines, highlight }: { title: string; lines: st
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.15, duration: 0.25 }}
-              className="text-sm text-slate-600"
+              className="text-sm text-purple-200/80"
             >
               {line}
             </motion.p>
@@ -28,7 +44,7 @@ function ReasoningColumn({ title, lines, highlight }: { title: string; lines: st
 
 export function ArbitratorReasoning({
   before,
-  after
+  after,
 }: {
   before: string[];
   after: string[];
@@ -36,7 +52,7 @@ export function ArbitratorReasoning({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Act 4 — Arbitrator Thinking</CardTitle>
+        <CardTitle className="text-white">Act 4 — Arbitrator Thinking</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 md:grid-cols-2">
         <ReasoningColumn title="Untrained Model" lines={before} />

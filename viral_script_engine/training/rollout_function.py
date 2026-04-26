@@ -159,57 +159,51 @@ def build_rollout_fn(
     max_new_tokens: int = 256,
 ):
     """
-    Returns a rollout function compatible with TRL's GRPOTrainer interface.
+    Returns a reward function compatible with TRL 0.15+ GRPOTrainer.
 
-    Each prompt is expected to contain an embedded episode config JSON in a header:
-      ##EPISODE_CONFIG## {...} ##END_CONFIG##
+    TRL 0.15+ handles generation internally and calls reward functions as:
+        reward_fn(completions, prompts=None, **kwargs) -> List[float]
 
-    This connects the training loop to the live OpenEnv environment.
+    Each completion is parsed for a JSON action which is stepped through the
+    live ViralScriptEnv to produce a scalar reward.
     """
 
     def rollout_fn(
-        prompts: List[str],
-        model,
-        tokenizer,
-    ) -> Tuple[List[str], List[float]]:
-        completions: List[str] = []
+        completions: List[str],
+        prompts: List[str] = None,
+        **kwargs,
+    ) -> List[float]:
         rewards: List[float] = []
+        _prompts = prompts or [""] * len(completions)
 
-        for prompt in prompts:
+        for prompt, completion in zip(_prompts, completions):
             config = _parse_episode_config(prompt)
-
             if config:
                 obs, _ = env.reset_from_config(config)
             else:
                 obs, _ = env.reset()
 
-            episode_completion_parts = []
+            action = _extract_json_action(completion)
             episode_reward = 0.0
             terminated = False
             truncated = False
 
+            # Run up to max_steps using the single generated completion as the action
             for step in range(max_steps):
-                obs_prompt = _format_observation_prompt(obs, step + 1, max_steps)
-                full_prompt = prompt + "\n\n" + obs_prompt
-
-                raw_output = _model_generate(model, tokenizer, full_prompt, max_new_tokens)
-                action = _extract_json_action(raw_output)
-                episode_completion_parts.append(raw_output)
-
                 try:
-                    obs, reward, terminated, truncated, info = env.step(action, raw_output=raw_output)
+                    obs, reward, terminated, truncated, info = env.step(
+                        action, raw_output=completion
+                    )
                     episode_reward = reward
                 except Exception:
-                    # LLM agent (critic/defender) parse error — skip step, keep prior reward
                     terminated = True
 
                 if terminated or truncated:
                     break
 
-            completions.append("\n".join(episode_completion_parts))
             rewards.append(episode_reward)
 
-        return completions, rewards
+        return rewards
 
     return rollout_fn
 

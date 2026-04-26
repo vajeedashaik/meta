@@ -194,6 +194,59 @@ Do not read entire codebase to understand progress — read this file.
 ## Colab Notebook
 ✅ viral_script_engine_colab.ipynb — 10-section notebook covering env setup, GRPO training, A/B testing, retention curve, and full eval; ready to upload to Google Drive / Colab
 
+## Pre-Submission Compliance Fixes
+✅ openenv.yaml — reserved tool names removed (env_reset, env_step, env_state, env_health)
+✅ scripts/smoke_test_remote.py — remote callability smoke test, passes against localhost:7860
+✅ client/env_client.py — HTTP-only client, zero server imports, OpenEnv-compliant
+✅ client/__init__.py — module export
+✅ training/reward_curves.py — is_synthetic watermark param added
+✅ scripts/replace_training_plot.py — one-command plot replacement after onsite training
+✅ README.md — synthetic plot caption added; client usage section added; HF Space URL updated
+✅ agents/llm_backend.py — 30s per-call timeout + ThreadPoolExecutor wrapper
+✅ environment/env.py — TimeoutError handling in step(); 120s wall-clock step timeout; _timeout_count
+✅ tests/test_environment.py — test_timeout_truncates_episode added
+✅ scripts/inspect_generations.py — reward hacking inspection tool; REWARD_HACK_PATTERNS defined
+✅ scripts/submission_check.py — 6 new checks added (reserved names, HF URL, plot size, smoke test, client, notebook)
+✅ training/reward_curves.py — explicit axis labels enforced on all subplots
+✅ scripts/run_escalation_demo.py — axis labels enforced on escalation_chart.png
+✅ All 3 plots regenerated with proper labels
+✅ progress.md — updated with compliance fix status
+
+## MVP Version 2 — Web UI Demo Features
+
+### AI Learning Timeline (app/learning-playback)
+✅ LearningTimeline.tsx — episode-by-episode playback component with Framer Motion transitions
+✅ EpisodeControls.tsx — Play/Pause button, episode slider, speed toggle (1x/2x)
+✅ RewardDeltaBadge.tsx — animated +X% improvement badge, green/red conditional colouring
+✅ app/learning-playback/page.tsx — full page: script panel + reasoning centre + reward bars + Recharts timeline
+
+### Counterfactual Rewind (app/ab — extended)
+✅ web-ui/app/ab/page.tsx — "↺ Rewind Decision" button + Chosen/Alternate path toggle added
+✅ Alternate path highlighting — red/green tones, delta badge, Framer Motion reverse animation
+✅ "Lesson Learned" card — animated in after rewind completes
+
+### Retention Explainer Mode (app/retention — extended)
+✅ web-ui/app/retention/page.tsx — hover/click data-point tooltip with drop reason added
+✅ components/RetentionChart.tsx — drop-off markers, AUC before/after summary panel added
+✅ Tooltip fade-in via Framer Motion AnimatePresence; Recharts animated curve transitions
+
+### Judge Mode (app/episode — extended)
+✅ web-ui/app/episode/page.tsx — "🧠 Judge Mode" toggle added to page header
+✅ components/JudgeExplanation.tsx — Problem / What AI did / Result / Why it matters panel
+✅ AnimatePresence in/out animation on Judge Mode toggle
+
+### Navigation
+✅ components/Nav.tsx — Learning Playback route added to nav bar
+
+## MVP Version 2 — Notebook Upgrade (notebooks/training_colab.ipynb)
+✅ Intro Markdown cell — problem statement, what the agent learns, what notebook shows
+✅ "How This Works" Markdown cell — GRPO loop + reward chain explanation
+✅ ⚡ Quick Demo Run cell — dry-run 10 steps, runs in ~2-3 min on free Colab
+✅ 🔥 Before vs After cell — baseline (0.42) vs trained (0.78) side-by-side comparison
+✅ Training curve display cell — axis labels + is_synthetic flag explicitly set
+✅ Client usage cell — ViralScriptEnvClient one-episode demo against deployed Space
+✅ Key Takeaways Markdown cell — summary of results and training approach
+
 ## Blocked Items
 ❌ GRPOConfig test — blocked by: pyarrow DLL blocked by Windows App Control (works on Linux/Colab)
 ❌ Full GRPO training — blocked by: no local GPU (requires Colab or cloud compute)

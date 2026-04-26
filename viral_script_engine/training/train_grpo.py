@@ -31,32 +31,69 @@ LOGS_DIR.mkdir(exist_ok=True)
 # ---------------------------------------------------------------------------
 
 def load_model(model_name: str, max_seq_length: int = 2048):
+    # Try unsloth first (2x faster); fall back to plain transformers+peft if
+    # the compiled _loss CUDA extension is missing (common Colab glitch).
     try:
         from unsloth import FastLanguageModel
-    except ImportError:
-        raise RuntimeError(
-            "unsloth is not installed. Install it on a CUDA machine: "
-            "pip install unsloth"
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name=model_name,
+            max_seq_length=max_seq_length,
+            dtype=None,
+            load_in_4bit=True,
         )
+        model = FastLanguageModel.get_peft_model(
+            model,
+            r=16,
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                            "gate_proj", "up_proj", "down_proj"],
+            lora_alpha=16,
+            lora_dropout=0,
+            bias="none",
+            use_gradient_checkpointing="unsloth",
+            random_state=42,
+        )
+        print("[TRAINING] Loaded model via unsloth (fast path).")
+        return model, tokenizer
+    except (ImportError, ModuleNotFoundError) as e:
+        print(f"[TRAINING] unsloth unavailable ({e}). Falling back to transformers + peft.")
 
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=model_name,
-        max_seq_length=max_seq_length,
-        dtype=None,
-        load_in_4bit=True,
-    )
-    model = FastLanguageModel.get_peft_model(
-        model,
-        r=16,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                        "gate_proj", "up_proj", "down_proj"],
-        lora_alpha=16,
-        lora_dropout=0,
-        bias="none",
-        use_gradient_checkpointing="unsloth",
-        random_state=42,
-    )
-    return model, tokenizer
+    # Fallback: standard transformers + bitsandbytes 4-bit + LoRA via peft
+    try:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+        from peft import LoraConfig, get_peft_model, TaskType
+
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            quantization_config=bnb_config,
+            device_map="auto",
+            trust_remote_code=True,
+        )
+        lora_config = LoraConfig(
+            r=16,
+            lora_alpha=16,
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                            "gate_proj", "up_proj", "down_proj"],
+            lora_dropout=0.0,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(model, lora_config)
+        model.print_trainable_parameters()
+        print("[TRAINING] Loaded model via transformers + peft (fallback path).")
+        return model, tokenizer
+    except Exception as e:
+        raise RuntimeError(f"Failed to load model via both unsloth and transformers: {e}") from e
 
 
 def build_grpo_config(output_dir: str, num_steps: int, dry_run: bool):
@@ -65,7 +102,13 @@ def build_grpo_config(output_dir: str, num_steps: int, dry_run: bool):
     except ImportError:
         raise RuntimeError("trl is not installed. Install it: pip install trl")
 
-    return GRPOConfig(
+    # Build only the params that exist in this version of GRPOConfig.
+    # max_new_tokens / temperature / top_p were removed in TRL 0.15+.
+    import inspect
+    from trl import GRPOConfig as _GRPOConfig
+    valid = set(inspect.signature(_GRPOConfig.__init__).parameters)
+
+    kwargs = dict(
         output_dir=output_dir,
         num_train_epochs=1,
         max_steps=5 if dry_run else num_steps,
@@ -74,15 +117,20 @@ def build_grpo_config(output_dir: str, num_steps: int, dry_run: bool):
         gradient_accumulation_steps=4,
         learning_rate=5e-6,
         max_grad_norm=0.1,
-        warmup_ratio=0.1,
+        warmup_steps=10,
         logging_steps=1,
         save_steps=50,
         report_to="wandb" if os.getenv("WANDB_API_KEY") else "none",
         use_vllm=False,
-        temperature=0.8,
-        top_p=0.9,
-        max_new_tokens=256,
     )
+    # max_new_tokens controls generation length in TRL 0.15+
+    if "max_new_tokens" not in valid:
+        kwargs["max_new_tokens"] = 256
+    for param in ("max_new_tokens", "temperature", "top_p"):
+        if param in valid:
+            kwargs[param] = {"max_new_tokens": 256, "temperature": 0.8, "top_p": 0.9}[param]
+
+    return GRPOConfig(**kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -234,13 +282,23 @@ def run_full_training(
     dataset = Dataset.from_dict({"prompt": all_prompts})
     config = build_grpo_config(output_dir, steps, dry_run=False)
 
-    trainer = GRPOTrainer(
-        model=model,
-        tokenizer=tokenizer,
-        config=config,
-        train_dataset=dataset,
-        reward_funcs=rollout_fn,
-    )
+    # TRL 0.15+ expects reward_funcs as a list; use try/except for args vs config naming.
+    try:
+        trainer = GRPOTrainer(
+            model=model,
+            args=config,
+            train_dataset=dataset,
+            reward_funcs=[rollout_fn],
+            processing_class=tokenizer,
+        )
+    except TypeError:
+        trainer = GRPOTrainer(
+            model=model,
+            config=config,
+            train_dataset=dataset,
+            reward_funcs=[rollout_fn],
+            tokenizer=tokenizer,
+        )
 
     print(f"\n[TRAINING] Starting GRPO training for {steps} steps...")
     trainer.train()

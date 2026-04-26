@@ -2,10 +2,12 @@
 Submission check for the Viral Script Debugging Engine.
 Run:  python scripts/submission_check.py
 
-Prints PASS or FAIL for each of the 10 requirements.
-Final line: SUBMISSION READY ✓  or  SUBMISSION INCOMPLETE — fix the above before submitting
+Prints PASS or FAIL for each requirement.
+Distinguishes BLOCKING failures (disqualify) from WARNINGS (hurt score).
+Final line: SUBMISSION READY  or  SUBMISSION INCOMPLETE — fix the above before submitting
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -22,11 +24,23 @@ REQUIRED_README_SECTIONS = [
     "Results",
 ]
 
+BLOCKING = {
+    "openenv.yaml has no reserved tool names",
+    "README HF Space URL is not a placeholder",
+    "scripts/smoke_test_remote.py exists",
+}
+
 results: list[tuple[str, bool, str]] = []
 
 
 def check(label: str, passed: bool, detail: str = ""):
-    status = "[PASS]" if passed else "[FAIL]"
+    is_blocking = label in BLOCKING
+    if passed:
+        status = "[PASS]"
+    elif is_blocking:
+        status = "[BLOCKING FAIL]"
+    else:
+        status = "[WARNING]"
     line = f"  {status}  {label}"
     if detail:
         line += f"  — {detail}"
@@ -202,17 +216,95 @@ except Exception as e:
     check("All tests pass (pytest)", False, str(e))
 
 # ---------------------------------------------------------------------------
+# 11. openenv.yaml has no reserved tool names
+# ---------------------------------------------------------------------------
+try:
+    import yaml
+    with open(yaml_path) as f:
+        manifest = yaml.safe_load(f)
+    tool_names = [t["name"] for t in manifest.get("tools", [])]
+    reserved = {"reset", "step", "state", "close"}
+    reserved_found = reserved.intersection(set(tool_names))
+    check("openenv.yaml has no reserved tool names", len(reserved_found) == 0,
+          f"Found reserved: {reserved_found}" if reserved_found else "")
+except Exception as e:
+    check("openenv.yaml has no reserved tool names", False, str(e))
+
+# ---------------------------------------------------------------------------
+# 12. README HF Space URL is not a placeholder
+# ---------------------------------------------------------------------------
+if readme_path.exists():
+    content = readme_path.read_text(encoding="utf-8")
+    has_real_hf_url = "huggingface.co/spaces" in content
+    is_placeholder = "YOUR-SPACE-URL" in content or "YOUR_TEAM" in content
+    check("README HF Space URL is not a placeholder", has_real_hf_url and not is_placeholder,
+          "Replace placeholder URL with real Space URL" if is_placeholder else "")
+else:
+    check("README HF Space URL is not a placeholder", False, "README.md not found")
+
+# ---------------------------------------------------------------------------
+# 13. Training plot exists and looks real (>80KB)
+# ---------------------------------------------------------------------------
+training_png2 = VSE / "logs" / "training_vs_baseline.png"
+plot_exists = training_png2.exists()
+plot_size_kb = os.path.getsize(str(training_png2)) / 1024 if plot_exists else 0
+plot_looks_real = plot_size_kb > 80
+check("Training plot exists", plot_exists, "")
+check("Training plot looks real (>80KB)", plot_looks_real,
+      f"Current size: {plot_size_kb:.0f}KB — may still be synthetic placeholder. Replace after onsite training."
+      if not plot_looks_real else "")
+
+# ---------------------------------------------------------------------------
+# 14. scripts/smoke_test_remote.py exists
+# ---------------------------------------------------------------------------
+check("scripts/smoke_test_remote.py exists",
+      (ROOT / "scripts" / "smoke_test_remote.py").exists(), "")
+
+# ---------------------------------------------------------------------------
+# 15. client/env_client.py exists (client/server separation)
+# ---------------------------------------------------------------------------
+check("client/env_client.py exists",
+      (ROOT / "client" / "env_client.py").exists(), "")
+
+# ---------------------------------------------------------------------------
+# 16. Colab notebook uses ViralScriptEnvClient
+# ---------------------------------------------------------------------------
+colab_path2 = ROOT / "notebooks" / "training_colab.ipynb"
+if colab_path2.exists():
+    try:
+        with open(colab_path2) as f:
+            nb = json.load(f)
+        nb_source = " ".join(
+            "".join(cell.get("source", [])) for cell in nb.get("cells", [])
+        )
+        check("Colab notebook uses ViralScriptEnvClient",
+              "ViralScriptEnvClient" in nb_source,
+              "Add a cell showing client usage against deployed Space URL")
+    except Exception as e:
+        check("Colab notebook uses ViralScriptEnvClient", False, str(e))
+else:
+    check("Colab notebook uses ViralScriptEnvClient", False, "notebook not found")
+
+# ---------------------------------------------------------------------------
 # Final verdict
 # ---------------------------------------------------------------------------
 print()
 all_passed = all(r[1] for r in results)
+blocking_failed = [r for r in results if not r[1] and r[0] in BLOCKING]
+warnings = [r for r in results if not r[1] and r[0] not in BLOCKING]
 pass_count = sum(1 for r in results if r[1])
 fail_count = len(results) - pass_count
 
-if all_passed:
-    print(f"  SUBMISSION READY [PASS]  ({pass_count}/{len(results)} checks passed)")
+if blocking_failed:
+    print(f"  SUBMISSION BLOCKED — {len(blocking_failed)} blocking failure(s) must be fixed:")
+    for label, _, detail in blocking_failed:
+        print(f"    - {label}" + (f": {detail}" if detail else ""))
+elif warnings:
+    print(f"  SUBMISSION READY (with warnings) — {pass_count}/{len(results)} checks passed")
+    print(f"  {len(warnings)} warning(s) may hurt score but will not disqualify:")
+    for label, _, detail in warnings:
+        print(f"    - {label}" + (f": {detail}" if detail else ""))
 else:
-    print(f"  SUBMISSION INCOMPLETE -- fix the above before submitting")
-    print(f"  ({pass_count}/{len(results)} passed, {fail_count} failed)")
+    print(f"  SUBMISSION READY [PASS]  ({pass_count}/{len(results)} checks passed)")
 
-sys.exit(0 if all_passed else 1)
+sys.exit(0 if not blocking_failed else 1)

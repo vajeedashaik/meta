@@ -142,3 +142,55 @@ def test_reward_clipped_to_0_1(env):
     env.reset(seed=42)
     _, reward, _, _, _ = env.step(SAMPLE_ACTION)
     assert 0.0 <= reward <= 1.0
+
+
+def test_timeout_truncates_episode(monkeypatch):
+    """Verify that a hanging LLM call causes truncated=True, not an infinite hang."""
+    import time
+
+    def slow_generate(*args, **kwargs):
+        time.sleep(200)
+
+    with (
+        patch("viral_script_engine.environment.env.CriticAgent") as mock_critic_cls,
+        patch("viral_script_engine.environment.env.RewriterAgent") as mock_rewriter_cls,
+        patch("viral_script_engine.environment.env.DefenderAgent") as mock_defender_cls,
+        patch("viral_script_engine.environment.env.CulturalAlignmentReward") as mock_r3_cls,
+        patch("viral_script_engine.environment.env.DebateResolutionReward") as mock_r4_cls,
+        patch("viral_script_engine.environment.env.DefenderPreservationReward") as mock_r5_cls,
+    ):
+        from viral_script_engine.agents.llm_backend import LLMBackend
+
+        mock_critic = MagicMock()
+        mock_critic.critique.side_effect = TimeoutError("LLM call timed out after 30s")
+        mock_critic_cls.return_value = mock_critic
+
+        mock_rewriter_cls.return_value = MagicMock()
+        mock_defender_cls.return_value = MagicMock()
+
+        mock_r3 = MagicMock()
+        mock_r3.score.return_value = MagicMock(score=0.6)
+        mock_r3_cls.return_value = mock_r3
+
+        mock_r4 = MagicMock()
+        from viral_script_engine.rewards.r4_debate_resolution import DebateResolutionResult
+        mock_r4.score.return_value = DebateResolutionResult(
+            score=0.8, resolution_status="resolved",
+            original_claim_id="C1", original_claim_class="hook_weakness", new_claims_count=2,
+        )
+        mock_r4_cls.return_value = mock_r4
+
+        mock_r5 = MagicMock()
+        from viral_script_engine.rewards.r5_defender_preservation import DefenderPreservationResult
+        mock_r5.score.return_value = DefenderPreservationResult(
+            score=0.9, max_similarity=0.9, best_matching_sentence="test quote"
+        )
+        mock_r5_cls.return_value = mock_r5
+
+        from viral_script_engine.environment.env import ViralScriptEnv
+        env = ViralScriptEnv(scripts_path=SCRIPTS_PATH, max_steps=5, difficulty="easy", use_escalation=False)
+        env.reset(seed=42)
+        _, _, terminated, truncated, info = env.step(SAMPLE_ACTION)
+
+    assert truncated is True
+    assert info.get("timeout") is True

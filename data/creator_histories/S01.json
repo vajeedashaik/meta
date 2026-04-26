@@ -1,0 +1,29 @@
+{
+  "creator_id": "S01",
+  "total_episodes": 1,
+  "recent_episodes": [
+    {
+      "episode_id": "7a472205-0bca-4fb5-8b8c-3ad7e40a15ec",
+      "episode_number": 1,
+      "script_niche": "personal finance",
+      "platform": "Reels",
+      "dominant_flaw": "pacing_issue",
+      "actions_taken": [
+        "hook_rewrite",
+        "hook_rewrite",
+        "hook_rewrite",
+        "hook_rewrite",
+        "hook_rewrite"
+      ],
+      "what_worked": [],
+      "what_didnt": [],
+      "final_total_reward": 0.61103,
+      "key_learning": "Fixed pacing_issue using hook_rewrite. no component improved, no regressions."
+    }
+  ],
+  "recurring_weak_points": [],
+  "recurring_strong_points": [],
+  "most_effective_action": "hook_rewrite",
+  "voice_stability_score": 1.0,
+  "improvement_trend": "plateauing"
+}

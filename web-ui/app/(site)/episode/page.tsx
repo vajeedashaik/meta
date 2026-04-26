@@ -10,6 +10,7 @@ import { ScriptPanel } from "@/components/ScriptPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiObservation, fetchState, healthCheck, resetEpisode, stepEpisode } from "@/lib/api";
+import { JudgeExplanation } from "@/components/JudgeExplanation";
 import {
   criticClaims,
   defender,
@@ -49,6 +50,7 @@ function parseDiff(diff?: string) {
 
 export default function EpisodePage() {
   const [trained, setTrained] = useState(true);
+  const [judgeMode, setJudgeMode] = useState(false);
   const [sessionId] = useState(() => `ui-${Date.now()}`);
   const [observation, setObservation] = useState<ApiObservation | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -156,6 +158,13 @@ export default function EpisodePage() {
         <Button variant={trained ? "default" : "outline"} onClick={() => setTrained(true)}>
           After Training
         </Button>
+        <Button
+          variant={judgeMode ? "default" : "outline"}
+          onClick={() => setJudgeMode((j) => !j)}
+          className="ml-2"
+        >
+          🧠 Judge Mode
+        </Button>
         <Button className="ml-auto" onClick={playEpisode} disabled={isRunning || status === "offline"}>
           {isRunning ? "Running..." : "Play Episode"}
         </Button>
@@ -166,14 +175,16 @@ export default function EpisodePage() {
           Reset
         </Button>
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-purple-300/60">
         Engine status:{" "}
-        <span className={status === "online" ? "text-emerald-600" : status === "offline" ? "text-red-600" : ""}>
+        <span className={status === "online" ? "text-emerald-400" : status === "offline" ? "text-red-400" : "text-purple-300"}>
           {status}
         </span>
         {observation?.step_num !== undefined ? ` • Step ${observation.step_num}/${observation.max_steps ?? 5}` : ""}
       </p>
-      {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg bg-red-900/40 border border-red-700/40 px-3 py-2 text-sm text-red-300">{error}</p>
+      ) : null}
 
       <ScriptPanel
         script={observation?.original_script ?? rawScript}
@@ -183,17 +194,24 @@ export default function EpisodePage() {
           niche: observation?.niche ?? metadata.niche
         }}
       />
+
+      <JudgeExplanation
+        rewardBefore={rewardBefore.total}
+        rewardAfter={trained ? rewards.total : rewardBefore.total}
+        show={judgeMode}
+      />
+
       <CriticPanel claims={claims} />
       <DefenderPanel coreStrength={defenderData.coreStrength} warnings={defenderData.warnings} />
       <ArbitratorReasoning before={reasoning.before} after={trained ? liveReasoning : reasoning.before} />
 
       <Card>
         <CardHeader>
-          <CardTitle>Act 5 — Rewrite + Impact</CardTitle>
+          <CardTitle className="text-white">Act 5 — Rewrite + Impact</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2 rounded-xl border border-slate-200 p-4">
-            <h4 className="text-sm font-semibold">Script Diff</h4>
+          <div className="space-y-2 rounded-xl border border-purple-800/40 bg-purple-900/20 p-4">
+            <h4 className="text-sm font-semibold text-purple-100">Script Diff</h4>
             {parseDiff(lastRound?.rewrite_diff).map((line, i) => (
               <motion.p
                 key={i}
@@ -201,7 +219,9 @@ export default function EpisodePage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.12 }}
                 className={`rounded-lg px-2 py-1 text-sm ${
-                  line.type === "added" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                  line.type === "added"
+                    ? "bg-emerald-900/40 text-emerald-300"
+                    : "bg-red-900/40 text-red-300"
                 }`}
               >
                 {line.type === "added" ? "+" : "-"} {line.text}
@@ -212,14 +232,14 @@ export default function EpisodePage() {
             <RewardBars data={rewards} title="Reward Components (R1-R5 + process)" />
             <Card>
               <CardHeader>
-                <CardTitle>Impact Metric</CardTitle>
+                <CardTitle className="text-white">Impact Metric</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-600">Total reward before to after</p>
-                <p className="mt-2 text-3xl font-bold text-primary">
+                <p className="text-sm text-purple-300/70">Total reward before to after</p>
+                <p className="mt-2 text-3xl font-bold text-violet-400">
                   {rewardBefore.total.toFixed(2)} {"->"} {(trained ? rewards.total : rewardBefore.total).toFixed(2)}
                 </p>
-                <p className="mt-1 text-sm text-emerald-600">+{improvement.toFixed(0)}% improvement</p>
+                <p className="mt-1 text-sm text-emerald-400">+{improvement.toFixed(0)}% improvement</p>
               </CardContent>
             </Card>
           </div>

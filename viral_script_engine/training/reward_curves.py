@@ -44,6 +44,7 @@ def plot_training_curves(
     baseline_log_path: str = "logs/baseline_results.json",
     training_log_path: Optional[str] = "logs/training_results.json",
     output_path: str = "logs/training_vs_baseline.png",
+    is_synthetic: bool = True,
 ):
     """
     Judge-facing comparison plot.
@@ -53,6 +54,9 @@ def plot_training_curves(
     - Grey line: baseline reward per episode
     - Blue line: trained reward per episode (if available)
     - Horizontal dashed line: baseline mean
+
+    is_synthetic: if True, adds a visible watermark indicating placeholder data.
+    Pass is_synthetic=False after a real GRPO training run.
 
     Saves PNG (dpi=150) and PDF. Prints improvement summary.
     """
@@ -92,13 +96,22 @@ def plot_training_curves(
             ax.plot(ep_nums_train, train_series, color="steelblue", linewidth=1.5,
                     marker="s", markersize=3, label="Trained", alpha=0.9)
 
-        ax.set_title(label, fontsize=10)
-        ax.set_xlabel("Episode", fontsize=8)
-        ax.set_ylabel("Reward", fontsize=8)
-        ax.set_ylim(0, 1)
+        ax.set_title(label, fontsize=11, fontweight="bold")
+        ax.set_xlabel("Episode", fontsize=10)
+        ax.set_ylabel("Reward (0–1)", fontsize=10)
+        ax.set_ylim(0, 1.05)
         ax.tick_params(labelsize=7)
         ax.grid(True, alpha=0.3)
         ax.legend(fontsize=6, loc="lower right")
+
+    if is_synthetic:
+        fig.text(
+            0.5, 0.5,
+            "PLACEHOLDER — Replace with real training run",
+            fontsize=18, color="red", alpha=0.25,
+            ha="center", va="center", rotation=30,
+            transform=fig.transFigure,
+        )
 
     plt.tight_layout()
 

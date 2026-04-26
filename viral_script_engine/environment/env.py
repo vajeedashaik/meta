@@ -1,5 +1,6 @@
 import json
 import random
+import time
 from collections import Counter
 from typing import Optional, Tuple
 
@@ -65,9 +66,9 @@ class ViralScriptEnv:
         if not self._scripts:
             self._scripts = all_scripts
 
-        self.critic = CriticAgent()
-        self.defender = DefenderAgent()
-        self.rewriter = RewriterAgent()
+        self.critic = CriticAgent(backend="hf")
+        self.defender = DefenderAgent(backend="hf")
+        self.rewriter = RewriterAgent(backend="hf")
         self.r1 = HookStrengthReward()
         self.r2 = CoherenceReward()
         self.r3 = CulturalAlignmentReward(knowledge_base_path=cultural_kb_path)
@@ -106,6 +107,7 @@ class ViralScriptEnv:
 
         # Track first-step critic output per episode for dominant class detection
         self._first_critique = None
+        self._timeout_count: int = 0
 
     def reset_from_config(self, episode_config: dict) -> Tuple[dict, dict]:
         """Reset the environment to a specific episode config from curriculum JSONL."""
@@ -207,25 +209,37 @@ class ViralScriptEnv:
         if self._state is None:
             raise RuntimeError("Call reset() before step()")
 
+        _step_start = time.time()
+
         arb_action = ArbitratorAction(**action)
 
-        critique = self.critic.critique(
-            script=self._state.current_script,
-            region=self._state.region,
-            platform=self._state.platform,
-            niche=self._state.niche,
-        )
+        try:
+            critique = self.critic.critique(
+                script=self._state.current_script,
+                region=self._state.region,
+                platform=self._state.platform,
+                niche=self._state.niche,
+            )
+        except TimeoutError:
+            self._timeout_count += 1
+            info = {"timeout": True, "timeout_agent": "critic", "timeout_count": self._timeout_count}
+            return self._build_observation().model_dump(), 0.0, False, True, info
 
         # Track first critique for dominant class detection at episode end
         if self._state.step_num == 0:
             self._first_critique = critique
 
-        defender_output = self.defender.defend(
-            script=self._state.current_script,
-            critic_claims=critique.claims,
-            region=self._state.region,
-            platform=self._state.platform,
-        )
+        try:
+            defender_output = self.defender.defend(
+                script=self._state.current_script,
+                critic_claims=critique.claims,
+                region=self._state.region,
+                platform=self._state.platform,
+            )
+        except TimeoutError:
+            self._timeout_count += 1
+            info = {"timeout": True, "timeout_agent": "defender", "timeout_count": self._timeout_count}
+            return self._build_observation().model_dump(), 0.0, False, True, info
 
         # Phase 7: parse reasoning chain and compute process reward before rewrite
         reasoning_chain = None
@@ -244,7 +258,12 @@ class ViralScriptEnv:
                 reasoning_chain = None
                 process_result = None
 
-        rewrite_result = self.rewriter.rewrite(self._state.current_script, arb_action)
+        try:
+            rewrite_result = self.rewriter.rewrite(self._state.current_script, arb_action)
+        except TimeoutError:
+            self._timeout_count += 1
+            info = {"timeout": True, "timeout_agent": "rewriter", "timeout_count": self._timeout_count}
+            return self._build_observation().model_dump(), 0.0, False, True, info
         new_script = rewrite_result.rewritten_script
 
         r1_result = self.r1.score(new_script, platform=self._current_platform)
@@ -383,6 +402,13 @@ class ViralScriptEnv:
             )
             self.history_store.save(self._current_history_buffer)
 
+        if time.time() - _step_start > 120:
+            self._timeout_count += 1
+            return self._build_observation().model_dump(), 0.0, False, True, {
+                "timeout": True, "timeout_agent": "step_wall_clock",
+                "timeout_count": self._timeout_count,
+            }
+
         info = {
             "reward_components": components.model_dump(),
             "anti_gaming_triggered": anti_log.triggered,
@@ -393,6 +419,7 @@ class ViralScriptEnv:
             "process_reward_result": process_result.model_dump() if process_result else None,
             "reasoning_chain": reasoning_chain.model_dump() if reasoning_chain else None,
             "creator_profile": self._current_profile.model_dump(mode="json") if self._current_profile else None,
+            "timeout_count": self._timeout_count,
         }
         return self._build_observation().model_dump(), components.total, terminated, False, info
 
@@ -433,6 +460,7 @@ class ViralScriptEnv:
             "episode_id": s.episode_id,
             "anti_gaming_logs": getattr(s, "anti_gaming_logs", []),
             "creator_profile": self._current_profile.model_dump(mode="json") if self._current_profile else None,
+            "timeout_count": self._timeout_count,
         }
 
     def _build_observation(self) -> Observation:

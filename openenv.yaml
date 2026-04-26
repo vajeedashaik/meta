@@ -16,12 +16,14 @@ step_method: step
 state_method: state
 reward_method: reward
 tools:
-  - name: reset
-    description: "Start a new script improvement episode"
-  - name: step
-    description: "Execute one debate round: Critic attacks, Defender responds, Arbitrator acts, Rewriter executes"
-  - name: state
-    description: "Get current environment state including script, debate history, and reward components"
+  - name: env_reset
+    description: "Start a new script improvement episode. Accepts: session_id (str), difficulty (str: easy|medium|hard), options (dict). Returns: observation dict, info dict."
+  - name: env_step
+    description: "Execute one debate round: Critic attacks, Defender responds, Arbitrator acts, Rewriter executes. Accepts: session_id (str), action (dict with action_type, target_section, instruction, critique_claim_id, reasoning). Returns: observation, reward, terminated, truncated, info."
+  - name: env_state
+    description: "Get the full current environment state. Accepts: session_id (str). Returns: current_script, original_script, debate_history, reward_components, step_num, difficulty_level, episode_id."
+  - name: env_health
+    description: "Health check endpoint. Returns: status, environment name, version."
 dependencies:
   - anthropic>=0.40.0
   - sentence-transformers>=2.7.0

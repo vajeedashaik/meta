@@ -125,8 +125,8 @@ def _save_chart(episodes: list, output_path: Path):
     color_diff = "#2196F3"
     color_r4 = "#FF5722"
 
-    ax1.set_xlabel("Episode", fontsize=11)
-    ax1.set_ylabel("Difficulty Score", color=color_diff, fontsize=11)
+    ax1.set_xlabel("Episode Number", fontsize=10)
+    ax1.set_ylabel("Difficulty Level (1=easy → 4=self_generated)", color=color_diff, fontsize=10)
     ax1.step(ep_nums, diff_scores, color=color_diff, linewidth=2, where="post", label="Difficulty")
     ax1.tick_params(axis="y", labelcolor=color_diff)
     ax1.set_ylim(0, 5)
@@ -134,7 +134,7 @@ def _save_chart(episodes: list, output_path: Path):
     ax1.set_yticklabels(["easy", "medium", "hard", "self_generated"], fontsize=9)
 
     ax2 = ax1.twinx()
-    ax2.set_ylabel("R4 Score", color=color_r4, fontsize=11)
+    ax2.set_ylabel("R4 Score (Debate Resolution Quality)", color=color_r4, fontsize=10)
     ax2.plot(ep_nums, r4_scores, color=color_r4, linewidth=1.5, marker="o", markersize=4, label="R4 Score")
     ax2.tick_params(axis="y", labelcolor=color_r4)
     ax2.set_ylim(0, 1.05)

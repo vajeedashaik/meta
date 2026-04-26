@@ -71,6 +71,38 @@ GET  /health
 
 ---
 
+## Using the Client
+
+For remote interaction with the deployed Space (the correct approach for judges and external users), use the HTTP client — no server imports required:
+
+```python
+from client.env_client import ViralScriptEnvClient
+
+# Point at the deployed HuggingFace Space
+client = ViralScriptEnvClient(base_url="https://aryanvihan-viral-script-debugging-engine.hf.space")
+
+# Run one full episode
+obs, info = client.reset(difficulty="easy")
+
+action = {
+    "action_type": "hook_rewrite",
+    "target_section": "hook",
+    "instruction": "Lead with a surprising statistic in the first 3 seconds",
+    "critique_claim_id": "C1",
+    "reasoning": "C1 is the highest-severity unflagged claim"
+}
+obs, reward, terminated, truncated, info = client.step(action)
+print(f"Reward: {reward:.3f} | Terminated: {terminated}")
+
+# Start a fresh episode
+client.new_session()
+obs, info = client.reset(difficulty="medium")
+```
+
+The client (`client/env_client.py`) is a drop-in replacement for `ViralScriptEnv` for remote deployments. It never imports from the server package — HTTP only.
+
+---
+
 ## Reward Functions
 
 | Reward | What It Measures | How It's Computed |
@@ -134,6 +166,8 @@ The Arbitrator policy is trained end-to-end: the model generates an action JSON,
 
 ![Reward improvement](logs/training_vs_baseline.png)
 
+*Note: Plot will be replaced with real GRPO training curves after onsite compute run.*
+
 | Reward Component | Baseline (Untrained) | Trained (200 steps) | Improvement |
 |-----------------|---------------------|---------------------|-------------|
 | R1 Hook Strength | 0.42 | 0.71 | +69% |
@@ -165,7 +199,7 @@ advice calibrated to exactly where they are in their growth journey.
 
 ## HuggingFace Space
 
-[huggingface.co/spaces/YOUR_TEAM/viral-script-debugging-engine](https://huggingface.co/spaces/YOUR_TEAM/viral-script-debugging-engine)
+[huggingface.co/spaces/AryanVihan/viral-script-debugging-engine](https://huggingface.co/spaces/AryanVihan/viral-script-debugging-engine)
 
 ---
 
