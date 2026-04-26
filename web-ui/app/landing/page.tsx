@@ -71,13 +71,11 @@ export default function Landing() {
 
       {/* Fixed full-bleed background video */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <video
-          src="/bg-video.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover"
+        <iframe
+          src="https://drive.google.com/file/d/1l2Olms1JUEYM0_cydOfqciz6kO1S4SbT/preview"
+          allow="autoplay"
+          className="w-full h-full border-0 scale-[1.02]"
+          style={{ objectFit: "cover" }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-[#0d0e10]/95" />
       </div>
