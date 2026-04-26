@@ -1,3 +1,13 @@
+---
+title: MetaDebate
+emoji: 🎬
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
 # Viral Script Debugging Engine
 ### Meta × OpenEnv Hackathon 2026 | Theme 1: Multi-Agent · Theme 4: Self-Improvement
 
