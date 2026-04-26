@@ -169,6 +169,31 @@ Do not read entire codebase to understand progress — read this file.
 ✅ test_phase12.py — 14 tests, all passing
 ✅ Phase 12 gate — PHASE 12 GATE: PASS, R10 firing
 
+## Web UI — Next.js Dashboard
+✅ Nav — top navigation bar linking all 6 routes
+✅ PipelineViz — animated pipeline diagram showing all 12 phases end-to-end
+✅ PhaseTimeline — scrollable phase-by-phase timeline with status badges
+✅ RewardBars — live reward breakdown bars for all 10 rewards (R1–R10)
+✅ ABBattle — side-by-side A/B trajectory comparison panel (Phase 10 visualisation)
+✅ ScriptPanel — script display panel with syntax highlighting
+✅ CriticPanel — critic agent output panel
+✅ DefenderPanel — defender agent output panel
+✅ ArbitratorReasoning — reasoning chain display (Phase 7 process reward)
+✅ RetentionChart — ASCII + bar chart for R10 retention curve prediction
+✅ CreatorMemory — longitudinal history panel (Phase 11 memory)
+✅ LearningGraph — reward trend graph across episodes
+✅ app/page.tsx — home page with PipelineViz + PhaseTimeline
+✅ app/dashboard/page.tsx — system overview dashboard
+✅ app/episode/page.tsx — live episode runner page
+✅ app/ab/page.tsx — A/B battle visualisation page
+✅ app/memory/page.tsx — creator memory / longitudinal history page
+✅ app/retention/page.tsx — retention curve simulator page
+✅ app/learning/page.tsx — learning curve / reward trend page
+✅ Next.js build — 10 routes pass TypeScript and build checks
+
+## Colab Notebook
+✅ viral_script_engine_colab.ipynb — 10-section notebook covering env setup, GRPO training, A/B testing, retention curve, and full eval; ready to upload to Google Drive / Colab
+
 ## Blocked Items
 ❌ GRPOConfig test — blocked by: pyarrow DLL blocked by Windows App Control (works on Linux/Colab)
 ❌ Full GRPO training — blocked by: no local GPU (requires Colab or cloud compute)
