@@ -75,3 +75,5 @@ class Observation(BaseModel):
     current_moderation_flags: List[Any] = []
     current_originality_flags: List[Any] = []
     creator_profile: Optional[Any] = None   # Phase 8: CreatorProfile dict
+    creator_history: Optional[Any] = None   # Phase 11: CreatorHistoryBuffer (None for first-timers)
+    history_context: Optional[str] = None   # Phase 11: formatted prompt string

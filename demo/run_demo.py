@@ -97,8 +97,47 @@ def _diff_lines(original: str, rewritten: str):
 # Acts
 # ---------------------------------------------------------------------------
 
+def _show_creator_history_panel(creator_id: str) -> None:
+    """Phase 11: if a history file exists for this creator, show it before Act 1."""
+    try:
+        from viral_script_engine.memory.history_store import HistoryStore
+        store_dir = str(_ROOT / "data" / "creator_histories")
+        store = HistoryStore(store_dir=store_dir)
+        buf = store.load(creator_id)
+        if buf is None:
+            return
+        weak = ", ".join(buf.recurring_weak_points) if buf.recurring_weak_points else "none"
+        effective = buf.most_effective_action or "unknown"
+        last_ep = buf.recent_episodes[-1] if buf.recent_episodes else None
+        last_line = (
+            f"Last session: {last_ep.dominant_flaw} → {last_ep.actions_taken[0] if last_ep.actions_taken else '?'} "
+            f"(reward {last_ep.final_total_reward:.2f})"
+            if last_ep else "No prior session"
+        )
+        body = (
+            f"Sessions: {buf.total_episodes}  |  Trend: {buf.improvement_trend}  |  "
+            f"Voice: {buf.voice_stability_score:.0%} stable\n"
+            f"Recurring weak: {weak}\n"
+            f"Most effective fix: {effective}\n"
+            f"{last_line}"
+        )
+        console.print(Panel(
+            body,
+            title="[bold yellow]CREATOR HISTORY[/bold yellow]",
+            border_style="yellow",
+            padding=(0, 2),
+        ))
+        console.print()
+    except Exception:
+        pass
+
+
 def act1_raw_script(script: dict):
     console.print(Rule("[bold cyan]ACT 1 — THE RAW SCRIPT[/bold cyan]", style="cyan"))
+    # Phase 11: show creator history if it exists
+    creator_id = script.get("creator_id", script.get("script_id", ""))
+    if creator_id:
+        _show_creator_history_panel(creator_id)
     flaws = ", ".join(script.get("known_flaws", []))
 
     # Phase 9: show platform spec inline

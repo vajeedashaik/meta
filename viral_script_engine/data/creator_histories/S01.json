@@ -1,0 +1,91 @@
+{
+  "creator_id": "S01",
+  "total_episodes": 6,
+  "recent_episodes": [
+    {
+      "episode_id": "17239533-0c5a-48af-acac-1a093c44de1f",
+      "episode_number": 2,
+      "script_niche": "personal finance",
+      "platform": "Reels",
+      "dominant_flaw": "cultural_mismatch",
+      "actions_taken": [
+        "cultural_ref_sub",
+        "cultural_ref_sub",
+        "cultural_ref_sub"
+      ],
+      "what_worked": [],
+      "what_didnt": [],
+      "final_total_reward": 0.4845611111111111,
+      "key_learning": "Fixed cultural_mismatch using cultural_ref_sub. no component improved, no regressions."
+    },
+    {
+      "episode_id": "451ce5f0-8bc2-474a-acd6-29af91a7adbc",
+      "episode_number": 3,
+      "script_niche": "personal finance",
+      "platform": "Reels",
+      "dominant_flaw": "hook_weakness",
+      "actions_taken": [
+        "section_reorder",
+        "section_reorder",
+        "section_reorder"
+      ],
+      "what_worked": [],
+      "what_didnt": [],
+      "final_total_reward": 0.4845611111111111,
+      "key_learning": "Fixed hook_weakness using section_reorder. no component improved, no regressions."
+    },
+    {
+      "episode_id": "04c3ef0a-b748-4de3-a0ca-9498d677b13d",
+      "episode_number": 4,
+      "script_niche": "personal finance",
+      "platform": "Reels",
+      "dominant_flaw": "pacing_issue",
+      "actions_taken": [
+        "cta_placement",
+        "cta_placement",
+        "cta_placement"
+      ],
+      "what_worked": [],
+      "what_didnt": [],
+      "final_total_reward": 0.5556722222222222,
+      "key_learning": "Fixed pacing_issue using cta_placement. no component improved, no regressions."
+    },
+    {
+      "episode_id": "73ad4f0a-ef49-4070-89bc-e8d563c36b48",
+      "episode_number": 5,
+      "script_niche": "personal finance",
+      "platform": "Reels",
+      "dominant_flaw": "hook_weakness",
+      "actions_taken": [
+        "hook_rewrite",
+        "hook_rewrite",
+        "hook_rewrite"
+      ],
+      "what_worked": [],
+      "what_didnt": [],
+      "final_total_reward": 0.5556722222222222,
+      "key_learning": "Fixed hook_weakness using hook_rewrite. no component improved, no regressions."
+    },
+    {
+      "episode_id": "c76c2b49-80e0-4c0b-ac54-43232c029763",
+      "episode_number": 6,
+      "script_niche": "personal finance",
+      "platform": "Reels",
+      "dominant_flaw": "cta_weakness",
+      "actions_taken": [
+        "cultural_ref_sub",
+        "cultural_ref_sub",
+        "cultural_ref_sub"
+      ],
+      "what_worked": [],
+      "what_didnt": [],
+      "final_total_reward": 0.4845611111111111,
+      "key_learning": "Fixed cta_weakness using cultural_ref_sub. no component improved, no regressions."
+    }
+  ],
+  "recurring_weak_points": [],
+  "recurring_strong_points": [],
+  "most_effective_action": "cta_placement",
+  "voice_stability_score": 1.0,
+  "improvement_trend": "plateauing"
+}

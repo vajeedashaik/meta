@@ -28,6 +28,8 @@ from viral_script_engine.personas.profile_generator import ProfileGenerator
 from viral_script_engine.rewards.r8_persona_fit import PersonaFitReward
 from viral_script_engine.rewards.r9_platform_pacing import PlatformPacingReward
 from viral_script_engine.platforms.platform_spec import PlatformRegistry
+from viral_script_engine.memory.memory_compressor import MemoryCompressor
+from viral_script_engine.memory.history_store import HistoryStore
 
 _TIERS = {
     "easy": ["S01", "S02", "S03", "S04"],
@@ -81,9 +83,13 @@ class ViralScriptEnv:
         self.r8 = PersonaFitReward()
         self.r9 = PlatformPacingReward()
         self.platform_registry = PlatformRegistry()
+        self.memory_compressor = MemoryCompressor()
+        self.history_store = HistoryStore()
         self._state: Optional[EpisodeState] = None
         self._current_profile: Optional[CreatorProfile] = None
         self._current_platform: str = "Reels"
+        self._current_creator_id: str = "default"
+        self._current_history_buffer = None
 
         if use_escalation:
             if difficulty_tracker is None:
@@ -145,6 +151,8 @@ class ViralScriptEnv:
         return obs, info
 
     def _reset_with_script(self, script: dict, difficulty: str) -> Tuple[dict, dict]:
+        self._current_creator_id = script.get("creator_id", script.get("script_id", "default"))
+        self._current_history_buffer = self.history_store.load(self._current_creator_id)
         self._current_platform = script.get("platform", "Reels")
         r1_result = self.r1.score(script["script_text"], platform=self._current_platform)
         r2_result = self.r2.score(script["script_text"], script["script_text"], platform=self._current_platform)
@@ -342,6 +350,20 @@ class ViralScriptEnv:
                 episode_id=self._state.episode_id,
             )
 
+        if terminated:
+            episode_number = (
+                (self._current_history_buffer.total_episodes + 1)
+                if self._current_history_buffer else 1
+            )
+            new_memory = self.memory_compressor.compress(
+                episode_log=self._build_episode_log(),
+                episode_number=episode_number,
+            )
+            self._current_history_buffer = self.memory_compressor.update_buffer(
+                self._current_history_buffer, new_memory, self._current_creator_id
+            )
+            self.history_store.save(self._current_history_buffer)
+
         info = {
             "reward_components": components.model_dump(),
             "anti_gaming_triggered": anti_log.triggered,
@@ -354,6 +376,22 @@ class ViralScriptEnv:
             "creator_profile": self._current_profile.model_dump(mode="json") if self._current_profile else None,
         }
         return self._build_observation().model_dump(), components.total, terminated, False, info
+
+    def _build_episode_log(self) -> dict:
+        s = self._state
+        first_claims = []
+        if self._first_critique and self._first_critique.claims:
+            first_claims = [c.model_dump() for c in self._first_critique.claims]
+        return {
+            "episode_id": s.episode_id,
+            "niche": s.niche,
+            "platform": s.platform,
+            "actions_taken": [a.value if hasattr(a, "value") else str(a) for a in s.action_history],
+            "first_critique_claims": first_claims,
+            "initial_reward_components": s.episode_start_rewards.model_dump(),
+            "final_reward_components": s.last_reward_components.model_dump(),
+            "final_total_reward": s.last_reward_components.total,
+        }
 
     def _get_dominant_critique_class(self) -> str:
         """Return the most common critique_class from the first episode critique."""
@@ -387,6 +425,10 @@ class ViralScriptEnv:
             mod_flags = last_round.moderation_output.get("flags", [])
         if last_round and last_round.originality_output:
             orig_flags = last_round.originality_output.get("flags", [])
+        history_context = (
+            self._current_history_buffer.to_prompt_context()
+            if self._current_history_buffer else None
+        )
         return Observation(
             current_script=s.current_script,
             original_script=s.original_script,
@@ -402,4 +444,6 @@ class ViralScriptEnv:
             current_moderation_flags=mod_flags,
             current_originality_flags=orig_flags,
             creator_profile=self._current_profile.model_dump(mode="json") if self._current_profile else None,
+            creator_history=self._current_history_buffer.model_dump() if self._current_history_buffer else None,
+            history_context=history_context,
         )

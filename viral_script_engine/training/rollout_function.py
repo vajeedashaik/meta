@@ -89,12 +89,17 @@ def _format_observation_prompt(obs: dict, step_num: int, max_steps: int) -> str:
             f"Niche maturity: {profile.get('niche_maturity', 'unknown')}\n"
         )
 
+    # Phase 11: include creator history context
+    history_context = obs.get("history_context") or "First session — no history available."
+    history_section = f"\nCREATOR HISTORY:\n{history_context}\n"
+
     return (
         f"<|system|>\n{ARBITRATOR_SYSTEM}\n<|end|>\n\n"
         f"<|user|>\n"
         f"CURRENT SCRIPT:\n{current_script}\n\n"
         f"REGION: {region} | PLATFORM: {platform} | NICHE: {niche}\n\n"
         f"{profile_section}"
+        f"{history_section}"
         f"CRITIC CLAIMS:\n{critic_text}\n\n"
         f"DEFENDER RESPONSE:\n{defender_text}\n\n"
         f"CURRENT REWARDS: R1={r1:.2f} R2={r2:.2f} R3={r3} R4={r4} R5={r5}\n"

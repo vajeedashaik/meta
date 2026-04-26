@@ -139,6 +139,19 @@ Do not read entire codebase to understand progress — read this file.
 ✅ test_phase10.py — 25 tests, all passing
 ✅ Phase 10 gate — PHASE 10 GATE: PASS, delta=-0.078, contrastive reward active
 
+## Phase 11 — Longitudinal Episode Memory
+✅ EpisodeMemory + CreatorHistoryBuffer — pydantic schema; sliding 5-episode window; to_prompt_context() < 200 words
+✅ MemoryCompressor — compress() extracts dominant_flaw/actions/deltas; update_buffer() recomputes all stats
+✅ HistoryStore — JSON file per creator in data/creator_histories/; load/save/list_creators
+✅ memory/__init__.py — module exports
+✅ observations.py — creator_history + history_context fields on Observation
+✅ env.py — MemoryCompressor + HistoryStore wired; _build_episode_log(); memory saved on terminated=True
+✅ rollout_function.py — CREATOR HISTORY section injected into Arbitrator observation prompt
+✅ scripts/run_longitudinal_demo.py — 6-session longitudinal simulation; GATE: PASS
+✅ demo/run_demo.py — history panel in Act 1 when creator has prior sessions
+✅ test_phase11.py — 24 tests, all passing
+✅ Phase 11 gate — PHASE 11 GATE: PASS, 6 sessions completed, trend: plateauing
+
 ## Blocked Items
 ❌ GRPOConfig test — blocked by: pyarrow DLL blocked by Windows App Control (works on Linux/Colab)
 ❌ Full GRPO training — blocked by: no local GPU (requires Colab or cloud compute)
