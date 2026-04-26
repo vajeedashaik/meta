@@ -1,0 +1,54 @@
+{
+  "Reels": {
+    "hook_window_seconds": 3,
+    "optimal_script_length_words": 120,
+    "max_script_length_words": 180,
+    "hook_length_words": 15,
+    "cta_position": "last_10_percent",
+    "optimal_sentences_per_section": {"hook": 2, "body": 6, "cta": 1},
+    "pacing_norm": "fast",
+    "avg_retention_curve": "steep_drop_at_3s_then_gradual",
+    "penalty_for_slow_start": true,
+    "reward_for_pattern_interrupt": true,
+    "notes": "Fastest drop-off. Hook must deliver value in 3 seconds. No warmup allowed."
+  },
+  "Shorts": {
+    "hook_window_seconds": 2,
+    "optimal_script_length_words": 80,
+    "max_script_length_words": 120,
+    "hook_length_words": 10,
+    "cta_position": "last_5_percent",
+    "optimal_sentences_per_section": {"hook": 1, "body": 4, "cta": 1},
+    "pacing_norm": "very_fast",
+    "avg_retention_curve": "steep_drop_at_2s",
+    "penalty_for_slow_start": true,
+    "reward_for_pattern_interrupt": true,
+    "notes": "Shortest attention window. One-sentence hook maximum. Body must be dense."
+  },
+  "Feed": {
+    "hook_window_seconds": 5,
+    "optimal_script_length_words": 200,
+    "max_script_length_words": 300,
+    "hook_length_words": 25,
+    "cta_position": "last_15_percent",
+    "optimal_sentences_per_section": {"hook": 3, "body": 10, "cta": 2},
+    "pacing_norm": "moderate",
+    "avg_retention_curve": "gradual_decline",
+    "penalty_for_slow_start": false,
+    "reward_for_pattern_interrupt": false,
+    "notes": "Longer attention window. Can build up to the hook. More space for nuance."
+  },
+  "TikTok": {
+    "hook_window_seconds": 2,
+    "optimal_script_length_words": 100,
+    "max_script_length_words": 150,
+    "hook_length_words": 12,
+    "cta_position": "last_8_percent",
+    "optimal_sentences_per_section": {"hook": 1, "body": 5, "cta": 1},
+    "pacing_norm": "very_fast",
+    "avg_retention_curve": "steep_drop_at_2s_recovery_possible",
+    "penalty_for_slow_start": true,
+    "reward_for_pattern_interrupt": true,
+    "notes": "Similar to Shorts but with stronger recovery potential mid-video."
+  }
+}

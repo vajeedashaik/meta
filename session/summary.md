@@ -13,36 +13,40 @@ One session = one summary. Previous summaries live in phase-log.md.
 2026-04-26
 
 ### Phase
-Phase 8 — Creator Persona Modelling
+Phase 9 — Multi-Platform Reward Divergence
 
 ### What Was Done
-- Created personas/__init__.py, creator_profile.py, persona_kb.py, profile_generator.py
-- Created data/persona_advice_kb.json — tier-keyed advice rules (beginner/growing/established/verified)
-- Created rewards/r8_persona_fit.py — PersonaFitReward with 1.0/0.5/0.2/0.0 tier scoring + +0.1 recurring weakness bonus
-- Updated environment/observations.py — r8_persona_fit in RewardComponents; creator_profile in Observation; weights rebalanced
-- Updated environment/env.py — ProfileGenerator + PersonaFitReward wired in; profile generated per episode based on difficulty
-- Updated rewards/reward_aggregator.py — r8_persona_fit added to anti-gaming drop check fields
-- Updated training/rollout_function.py — CREATOR PROFILE section added to observation prompt
-- Updated all 3 curriculum JSONL files (25 episodes) with creator_profile field
-- Updated scripts/run_dummy_episode.py — CREATOR PROFILE panel; Phase 8 gate check
-- Created tests/test_phase8.py — 25 tests, all passing
-- Updated README.md — "Creator Persona Modelling — Ready for Production" section
-- Phase 8 gate: PHASE 8 GATE: PASS — Profile tier: growing/established
+- Created platforms/__init__.py, platform_kb.json, platform_spec.py — PlatformRegistry single source of truth for all 4 platforms
+- Updated rewards/r1_hook_strength.py — platform-aware hook scoring via PlatformRegistry; new length_fit check (6th check, 15% weight)
+- Updated rewards/r2_coherence.py — platform length penalty (max 0.3 cap) applied after semantic similarity score
+- Created rewards/r9_platform_pacing.py — PlatformPacingReward; 3 checks: pacing (40%), section ratio (40%), CTA position (20%)
+- Updated environment/observations.py — r9_platform_pacing in RewardComponents; updated _WEIGHTS to 9-reward spec
+- Updated rewards/reward_aggregator.py — r9_platform_pacing added to anti-gaming _COMPONENT_FIELDS
+- Updated environment/env.py — R9 wired in step(); _current_platform stored on reset(); platform passed to R1/R2
+- Updated curriculum JSONL files — added Feed entries: easy (+2), medium (+3), hard (+4 cross-platform)
+- Updated demo/run_demo.py — Act 1 shows platform spec (hook window, max length, pacing); Act 5 shows R9 row
+- Created tests/test_phase9.py — 20 tests, all passing
+- Created scripts/run_dummy_episode.py — LLM-stubbed gate check; Phase 9 GATE: PASS
+- Created scripts/run_platform_comparison.py — S03 scored on Reels/Shorts/Feed; all 3 rewards diverge; GATE: PASS
 
 ### What Was NOT Done (carry over)
 - Real GRPO training — requires GPU (Colab)
 
 ### Errors Encountered
-- PersonaFitReward tests: +0.1 weakness bonus was applying unexpectedly — fixed by passing explicit weak_points in tests
-- verified tier: cta_placement is correctly forbidden (not neutral) — fixed test to use growing tier for neutral case
-- CreatorTier enum serialized as "CreatorTier.ESTABLISHED" — fixed with model_dump(mode="json")
+- test_short_hook_passes_length_fit_on_reels: hook was ~18 words (exceeded Reels 15-word limit) — fixed test script
+- test_penalty_capped_at_0_3: compared semantically different scripts (base sim=0) — fixed to use same-vocab scripts
+- test_same_script_scores_differently_on_reels_vs_feed: _SLOW_SCRIPT both pacing+ratio zeroed out on both platforms — switched to sub-score comparison
+- test_env_r9_fires_in_step: defender.defend() not patched → API call — patched defender with full MagicMock
+- run_dummy_episode.py: R5 needs core_strength_quote from defender mock — added all required fields
+- run_platform_comparison.py: Unicode bar chars fail on Windows cp1252 — switched to ASCII #/.
 
 ### Tests Status
-Phase 8: 25 passed
-All phase tests combined (6+7+8+rewards+training): 85 passed, 1 skipped
+Phase 9: 20 passed
+Gate check (dummy episode): PASS
+Gate check (platform comparison S03): PASS — R1/R2/R9 all diverge across Reels/Shorts/Feed
 
 ### Commit Messages Generated
-feat(phase8): creator persona modelling — ProfileGenerator, R8 PersonaFit, 25 tests PASS, gate PASS
+feat(phase9): platform reward divergence — PlatformRegistry, R9 PlatformPacing, R1/R2 platform-aware, 20 tests PASS, gate PASS
 
 ---
 

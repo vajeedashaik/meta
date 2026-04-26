@@ -1,9 +1,74 @@
+# Environment & secrets
 .env
 *.env
+.env.*
+
+# Python
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
 *.egg-info/
+*.egg
+dist/
+build/
+.eggs/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm/
+.yarn/
+dist/
+.next/
+.nuxt/
+.cache/
+*.tsbuildinfo
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Outputs & logs
 outputs/
 logs/
 *.log
+
+# Model weights & large binaries
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# OS
+desktop.ini

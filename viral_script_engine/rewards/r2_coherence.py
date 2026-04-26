@@ -6,6 +6,7 @@ from typing import Dict, Optional
 import numpy as np
 
 from viral_script_engine.rewards.base import BaseReward
+from viral_script_engine.platforms.platform_spec import PlatformRegistry
 
 
 @dataclass
@@ -42,6 +43,7 @@ class CoherenceReward(BaseReward):
     def __init__(self):
         self._st_model: Optional[object] = None
         self._use_st: Optional[bool] = None
+        self.platform_registry = PlatformRegistry()
 
     def _try_load_st(self) -> bool:
         if self._use_st is not None:
@@ -75,7 +77,8 @@ class CoherenceReward(BaseReward):
         vocab = {w: i for i, w in enumerate(set(t1 + t2))}
         return _cosine(_tfidf_vector(t1, vocab), _tfidf_vector(t2, vocab))
 
-    def score(self, original: str, rewritten: str) -> CoherenceRewardResult:
+    def score(self, original: str, rewritten: str, platform: str = "Reels") -> CoherenceRewardResult:
+        spec = self.platform_registry.get(platform)
         sim = self._similarity(original, rewritten)
         if sim > 0.95:
             score, interpretation = 0.8, "barely_changed"
@@ -87,4 +90,16 @@ class CoherenceReward(BaseReward):
             interpretation = "moderate_drift"
         else:
             score, interpretation = 0.0, "drifted_too_far"
-        return CoherenceRewardResult(score=score, raw_similarity=sim, interpretation=interpretation)
+
+        # Platform length penalty: too long for the platform hurts coherence score
+        word_count = len(rewritten.split())
+        if word_count > spec.max_script_length_words:
+            length_penalty = min(
+                0.3,
+                (word_count - spec.max_script_length_words) / spec.max_script_length_words,
+            )
+        else:
+            length_penalty = 0.0
+
+        final_score = max(0.0, min(1.0, score - length_penalty))
+        return CoherenceRewardResult(score=final_score, raw_similarity=sim, interpretation=interpretation)

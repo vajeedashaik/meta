@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from viral_script_engine.rewards.base import BaseReward
+from viral_script_engine.platforms.platform_spec import PlatformRegistry
 
 _DEAD_OPENERS = [
     "hey guys", "welcome back", "today i want to", "so today",
@@ -32,7 +33,11 @@ def _extract_hook(text: str) -> str:
 
 
 class HookStrengthReward(BaseReward):
-    def score(self, script: str) -> HookRewardResult:
+    def __init__(self):
+        self.platform_registry = PlatformRegistry()
+
+    def score(self, script: str, platform: str = "Reels") -> HookRewardResult:
+        spec = self.platform_registry.get(platform)
         hook = _extract_hook(script)
         hook_lower = hook.lower()
         first_sentence = re.split(r'(?<=[.!?])\s+', hook.strip())[0].lower()
@@ -45,8 +50,21 @@ class HookStrengthReward(BaseReward):
             "anti_filler": self._check_anti_filler(hook_lower),
         }
         passed = sum(checks.values())
+        base_score = passed / 5
+
+        # Platform-aware length fit: hook should be within spec.hook_length_words
+        hook_word_count = len(hook.split())
+        if hook_word_count <= spec.hook_length_words:
+            length_score = 1.0
+        else:
+            overrun = hook_word_count - spec.hook_length_words
+            length_score = max(0.0, 1.0 - overrun / spec.hook_length_words)
+
+        final_score = base_score * 0.85 + length_score * 0.15
+        checks["length_fit"] = hook_word_count <= spec.hook_length_words
+
         return HookRewardResult(
-            score=min(1.0, max(0.0, passed / 5)),
+            score=min(1.0, max(0.0, final_score)),
             checks_passed=passed,
             check_details=checks,
         )

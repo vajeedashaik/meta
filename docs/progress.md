@@ -113,6 +113,21 @@ Do not read entire codebase to understand progress — read this file.
 
 ---
 
+## Phase 9 — Multi-Platform Reward Divergence
+✅ platform_kb.json — 4-platform knowledge base (Reels/Shorts/Feed/TikTok): hook window, length limits, pacing norms
+✅ PlatformSpec + PlatformRegistry — pydantic spec model, single source of truth, ValueError on unknown platform
+✅ R1 platform-aware — hook length scored against spec.hook_length_words; 6th check added (15% weight)
+✅ R2 platform length penalty — max 0.3 penalty when rewrite exceeds spec.max_script_length_words
+✅ R9 PlatformPacingReward — 3 checks: hook pacing (40%), section ratio (40%), CTA position (20%); zero LLM calls
+✅ observations.py — r9_platform_pacing in RewardComponents; _WEIGHTS updated to 9-reward spec
+✅ reward_aggregator.py — r9_platform_pacing in anti-gaming _COMPONENT_FIELDS
+✅ env.py — _current_platform stored on reset(); R1/R2 get platform param; R9 computed in step()
+✅ curriculum JSONL — Feed entries added: easy +2, medium +3, hard +4 cross-platform
+✅ demo/run_demo.py — Act 1: platform spec displayed; Act 5: R9 row in reward table
+✅ test_phase9.py — 20 tests, all passing
+✅ scripts/run_dummy_episode.py — LLM-stubbed gate check, Phase 9 GATE: PASS
+✅ scripts/run_platform_comparison.py — cross-platform comparison, R1/R2/R9 diverge on S03, GATE: PASS
+
 ## Blocked Items
 ❌ GRPOConfig test — blocked by: pyarrow DLL blocked by Windows App Control (works on Linux/Colab)
 ❌ Full GRPO training — blocked by: no local GPU (requires Colab or cloud compute)

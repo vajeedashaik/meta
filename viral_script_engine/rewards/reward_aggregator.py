@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 _COMPONENT_FIELDS = [
     "r1_hook_strength", "r2_coherence", "r3_cultural_alignment",
     "r4_debate_resolution", "r5_defender_preservation",
-    "r6_safety", "r7_originality", "r8_persona_fit",
+    "r6_safety", "r7_originality", "r8_persona_fit", "r9_platform_pacing",
 ]
 
 _DROP_THRESHOLD = 0.25

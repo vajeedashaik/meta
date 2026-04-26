@@ -26,6 +26,8 @@ from viral_script_engine.rewards.process_reward import ProcessReward, ProcessRew
 from viral_script_engine.personas.creator_profile import CreatorProfile, CreatorTier
 from viral_script_engine.personas.profile_generator import ProfileGenerator
 from viral_script_engine.rewards.r8_persona_fit import PersonaFitReward
+from viral_script_engine.rewards.r9_platform_pacing import PlatformPacingReward
+from viral_script_engine.platforms.platform_spec import PlatformRegistry
 
 _TIERS = {
     "easy": ["S01", "S02", "S03", "S04"],
@@ -77,8 +79,11 @@ class ViralScriptEnv:
         self.process_reward_calc = ProcessReward()
         self.profile_generator = ProfileGenerator()
         self.r8 = PersonaFitReward()
+        self.r9 = PlatformPacingReward()
+        self.platform_registry = PlatformRegistry()
         self._state: Optional[EpisodeState] = None
         self._current_profile: Optional[CreatorProfile] = None
+        self._current_platform: str = "Reels"
 
         if use_escalation:
             if difficulty_tracker is None:
@@ -140,8 +145,9 @@ class ViralScriptEnv:
         return obs, info
 
     def _reset_with_script(self, script: dict, difficulty: str) -> Tuple[dict, dict]:
-        r1_result = self.r1.score(script["script_text"])
-        r2_result = self.r2.score(script["script_text"], script["script_text"])
+        self._current_platform = script.get("platform", "Reels")
+        r1_result = self.r1.score(script["script_text"], platform=self._current_platform)
+        r2_result = self.r2.score(script["script_text"], script["script_text"], platform=self._current_platform)
         r3_result = self.r3.score(script["script_text"], script.get("region", "pan_india_english"))
         mod_out = self.moderation_agent.check(script["script_text"])
         orig_out = self.originality_agent.check(script["script_text"])
@@ -231,8 +237,8 @@ class ViralScriptEnv:
         rewrite_result = self.rewriter.rewrite(self._state.current_script, arb_action)
         new_script = rewrite_result.rewritten_script
 
-        r1_result = self.r1.score(new_script)
-        r2_result = self.r2.score(self._state.original_script, new_script)
+        r1_result = self.r1.score(new_script, platform=self._current_platform)
+        r2_result = self.r2.score(self._state.original_script, new_script, platform=self._current_platform)
         r3_result = self.r3.score(new_script, self._state.region)
 
         targeted_claim = next(
@@ -265,6 +271,9 @@ class ViralScriptEnv:
             )
             r8_score = r8_result.score
 
+        # Phase 9: compute R9 platform pacing
+        r9_result = self.r9.score(new_script, platform=self._current_platform)
+
         components = RewardComponents(
             r1_hook_strength=r1_result.score,
             r2_coherence=r2_result.score,
@@ -274,6 +283,7 @@ class ViralScriptEnv:
             r6_safety=r6_result.score,
             r7_originality=r7_result.score,
             r8_persona_fit=r8_score,
+            r9_platform_pacing=r9_result.score,
             process_reward=process_result.weighted_contribution if process_result else None,
         )
 

@@ -100,9 +100,24 @@ def _diff_lines(original: str, rewritten: str):
 def act1_raw_script(script: dict):
     console.print(Rule("[bold cyan]ACT 1 — THE RAW SCRIPT[/bold cyan]", style="cyan"))
     flaws = ", ".join(script.get("known_flaws", []))
+
+    # Phase 9: show platform spec inline
+    platform = script.get("platform", "Reels")
+    try:
+        from viral_script_engine.platforms.platform_spec import PlatformRegistry
+        spec = PlatformRegistry().get(platform)
+        platform_str = (
+            f"[dim]Platform:[/dim] {platform}  "
+            f"[dim]Hook window:[/dim] {spec.hook_window_seconds}s  "
+            f"[dim]Max length:[/dim] {spec.max_script_length_words} words  "
+            f"[dim]Pacing:[/dim] {spec.pacing_norm}"
+        )
+    except Exception:
+        platform_str = f"[dim]Platform:[/dim] {platform}"
+
     subtitle = (
         f"[dim]Region:[/dim] {script['region']}  "
-        f"[dim]Platform:[/dim] {script['platform']}  "
+        f"{platform_str}  "
         f"[dim]Niche:[/dim] {script['niche']}  "
         f"[dim]Known flaws:[/dim] [red]{flaws}[/red]"
     )
@@ -255,6 +270,7 @@ def act5_rewrite_and_reward(original_script: str, rewritten_script: str, reward_
         "r3_cultural_alignment": "R3 Cultural",
         "r4_debate_resolution": "R4 Resolution",
         "r5_defender_preservation": "R5 Preservation",
+        "r9_platform_pacing": "R9 Platform Pacing",
     }
 
     table = Table(box=box.SIMPLE_HEAD, show_header=False, padding=(0, 1))
