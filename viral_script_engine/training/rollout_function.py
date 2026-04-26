@@ -272,3 +272,94 @@ def _config_to_prompt(config: dict) -> str:
         f"CURRICULUM NOTES: {config.get('curriculum_notes', '')}\n\n"
         "Choose your action:\n<|end|>"
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 10 — A/B rollout function
+# ---------------------------------------------------------------------------
+
+def _format_ab_observation_prompt(state: dict, max_steps: int) -> str:
+    """Format the A/B observation for the Arbitrator prompt."""
+    traj_a = state.get("trajectory_a", {})
+    traj_b = state.get("trajectory_b", {})
+    delta = state.get("delta", 0.0)
+    step_num = state.get("step_num", 1)
+
+    def _rc_summary(rc: dict) -> str:
+        return (
+            f"R1={rc.get('r1_hook_strength') or 0.0:.2f} "
+            f"R2={rc.get('r2_coherence') or 0.0:.2f} "
+            f"R3={rc.get('r3_cultural_alignment') or 0.0:.2f} "
+            f"Total={rc.get('total') or 0.0:.2f}"
+        )
+
+    rc_a = traj_a.get("reward_components", {})
+    rc_b = traj_b.get("reward_components", {})
+
+    return (
+        f"<|system|>\n{ARBITRATOR_SYSTEM}\n<|end|>\n\n"
+        f"<|user|>\n"
+        f"TRAJECTORY A (Critic-first approach):\n"
+        f"Current script: {traj_a.get('current_script', '')}\n"
+        f"Rewards so far: {_rc_summary(rc_a)}  Cumulative={traj_a.get('cumulative_reward', 0.0):.3f}\n\n"
+        f"TRAJECTORY B (Defender-first approach):\n"
+        f"Current script: {traj_b.get('current_script', '')}\n"
+        f"Rewards so far: {_rc_summary(rc_b)}  Cumulative={traj_b.get('cumulative_reward', 0.0):.3f}\n\n"
+        f"Delta (A - B): {delta:.3f}\n"
+        f"Step: {step_num}/{max_steps}\n\n"
+        "Choose your next action (applied to BOTH trajectories):\n<|end|>"
+    )
+
+
+def build_ab_rollout_fn(
+    ab_env,
+    max_steps: int = 5,
+    max_new_tokens: int = 256,
+):
+    """
+    Rollout function for the A/B environment.
+
+    The prompt includes both trajectory states so the Arbitrator can see
+    how the two paths diverge and learn which starting action leads to
+    better cumulative outcomes.
+    """
+
+    def rollout_fn(
+        prompts: List[str],
+        model,
+        tokenizer,
+    ) -> Tuple[List[str], List[float]]:
+        completions: List[str] = []
+        rewards: List[float] = []
+
+        for prompt in prompts:
+            state = ab_env.reset()
+            episode_parts: List[str] = []
+            episode_reward = 0.0
+            terminated = False
+
+            for step in range(max_steps - 1):  # step 1 is forced; free steps = max_steps-1
+                obs_prompt = _format_ab_observation_prompt(state, max_steps)
+                full_prompt = prompt + "\n\n" + obs_prompt
+
+                raw_output = _model_generate(model, tokenizer, full_prompt, max_new_tokens)
+                action = _extract_json_action(raw_output)
+                episode_parts.append(raw_output)
+
+                try:
+                    state, episode_reward, terminated, _, _ = ab_env.step(action)
+                except Exception:
+                    terminated = True
+
+                if terminated:
+                    break
+
+            if not terminated:
+                episode_reward = ab_env.reward()
+
+            completions.append("\n".join(episode_parts))
+            rewards.append(episode_reward)
+
+        return completions, rewards
+
+    return rollout_fn

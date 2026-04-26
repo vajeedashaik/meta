@@ -622,11 +622,122 @@ def run_interactive():
 # Entry point
 # ---------------------------------------------------------------------------
 
+def run_ab_mode(script_id: str):
+    """
+    Act 4 — 'Two Paths': run both A/B trajectories in parallel and show
+    the contrastive reward at the end.  Phase 10 addition.
+    """
+    from viral_script_engine.environment.ab_env import ABScriptEnv
+    from viral_script_engine.rewards.contrastive_reward import ContrastiveReward
+
+    console.print(Rule(
+        "[bold yellow]ACT 4 — TWO PATHS (A/B Mode)[/bold yellow]", style="yellow"
+    ))
+    console.print(
+        "[dim]Running two parallel trajectories from the same script...[/dim]\n"
+    )
+
+    difficulty_map = {
+        "S01": "easy", "S02": "easy", "S03": "easy", "S04": "easy",
+        "S05": "medium", "S06": "medium", "S07": "medium",
+        "S08": "hard", "S09": "hard", "S10": "hard",
+    }
+    difficulty = difficulty_map.get(script_id, "hard")
+
+    ab_env = ABScriptEnv(
+        scripts_path=_SCRIPTS_PATH,
+        cultural_kb_path=_CULTURAL_KB_PATH,
+        max_steps=4,
+        difficulty=difficulty,
+    )
+
+    try:
+        state = ab_env.reset_from_script_id(script_id, _SCRIPTS_PATH)
+    except Exception as exc:
+        console.print(f"[red]A/B reset failed: {exc}[/red]")
+        return
+
+    # Show step 1 forced actions
+    forced_a = ab_env._forced_action_a or {}
+    forced_b = ab_env._forced_action_b or {}
+    traj_a = state["trajectory_a"]
+    traj_b = state["trajectory_b"]
+
+    table = Table(box=box.SIMPLE_HEAD, show_header=True, padding=(0, 1))
+    table.add_column("", style="yellow", min_width=22)
+    table.add_column("Trajectory A (Critic-first)", style="cyan", min_width=30)
+    table.add_column("Trajectory B (Defender-first)", style="green", min_width=30)
+
+    table.add_row(
+        "Step 1 action",
+        forced_a.get("action_type", "?"),
+        forced_b.get("action_type", "?"),
+    )
+    table.add_row(
+        "Cumulative reward",
+        f"{traj_a.get('cumulative_reward', 0.0):.3f}",
+        f"{traj_b.get('cumulative_reward', 0.0):.3f}",
+    )
+    console.print(Panel(table, title="[yellow]STEP 1 — FORCED[/yellow]", border_style="yellow"))
+
+    # Run one free step with a simple baseline action
+    baseline = BaselineArbitratorAgent()
+    obs_for_arb = {
+        "current_script": traj_a.get("current_script", ""),
+        "debate_history": traj_a.get("debate_history", []),
+        "reward_components": traj_a.get("reward_components", {}),
+    }
+    free_action = baseline.act(obs_for_arb)
+
+    try:
+        state, _, terminated, _, _ = ab_env.step(free_action)
+    except Exception as exc:
+        console.print(f"[dim]Free step failed: {exc}[/dim]")
+
+    # Episode end — contrastive reward
+    contrastive_result = ab_env.contrastive_reward_calc.compute(
+        ab_env._traj_a, ab_env._traj_b
+    )
+    traj_a_f = state["trajectory_a"]
+    traj_b_f = state["trajectory_b"]
+
+    winner_label = {
+        "A": "[cyan]A (critic-first)[/cyan]",
+        "B": "[green]B (defender-first)[/green]",
+        "tie": "[dim]tie[/dim]",
+    }.get(contrastive_result.winning_trajectory, contrastive_result.winning_trajectory)
+
+    lesson_map = {
+        "critic_first": "Act on the Critic's highest-severity claim first for maximum early gains.",
+        "defender_first": "Preserve the Defender's core voice first on culturally-rich scripts.",
+        "tie": "Both orderings performed similarly — action type matters more than sequence here.",
+    }
+
+    summary_body = (
+        f"Trajectory A final cumulative:  {traj_a_f.get('cumulative_reward', 0.0):.3f}\n"
+        f"Trajectory B final cumulative:  {traj_b_f.get('cumulative_reward', 0.0):.3f}\n\n"
+        f"Winner: {winner_label}\n"
+        f"Delta (A−B): {contrastive_result.delta:+.3f}\n"
+        f"Base reward:      {contrastive_result.base_reward:.4f}\n"
+        f"Contrast bonus:   {contrastive_result.contrast_bonus:+.4f}\n"
+        f"[bold]Contrastive reward: {contrastive_result.final_reward:.4f}[/bold]\n\n"
+        f"[italic dim]Lesson: {lesson_map.get(contrastive_result.winning_trajectory_type, '')}[/italic dim]"
+    )
+    console.print(Panel(
+        summary_body,
+        title="[yellow]EPISODE END — CONTRASTIVE REWARD[/yellow]",
+        border_style="yellow",
+        padding=(1, 2),
+    ))
+    console.print()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Viral Script Debugging Engine — 5-Act Demo")
     parser.add_argument("--script", default="S03", help="Script ID to demo (default: S03)")
     parser.add_argument("--compare", action="store_true", help="Show untrained vs trained arbitrator side-by-side")
     parser.add_argument("--interactive", action="store_true", help="Human acts as Arbitrator")
+    parser.add_argument("--ab-mode", action="store_true", help="Phase 10: run A/B two-path demo")
     args = parser.parse_args()
 
     console.print(Panel(
@@ -638,6 +749,10 @@ def main():
 
     if args.interactive:
         run_interactive()
+    elif args.ab_mode:
+        script = _load_script(args.script)
+        act1_raw_script(script)
+        run_ab_mode(args.script)
     else:
         run_compare(args.script)
 

@@ -128,6 +128,17 @@ Do not read entire codebase to understand progress — read this file.
 ✅ scripts/run_dummy_episode.py — LLM-stubbed gate check, Phase 9 GATE: PASS
 ✅ scripts/run_platform_comparison.py — cross-platform comparison, R1/R2/R9 diverge on S03, GATE: PASS
 
+## Phase 10 — A/B Testing Environment Layer
+✅ Trajectory + TrajectoryType — pydantic model; forced first-action logic (critic_first / defender_first)
+✅ ABScriptEnv — two parallel ViralScriptEnvs; forced step 1; free steps 2+; state() with delta
+✅ ContrastiveReward — delta-based reward: base_reward + tanh(delta*3)*0.2, clipped to [0,1]
+✅ ContrastiveRewardResult — pydantic result with final_reward, contrast_bonus, winning_trajectory
+✅ training/rollout_function.py — build_ab_rollout_fn() with dual-trajectory prompt format added
+✅ scripts/run_ab_episode.py — gate check script; side-by-side step output; lesson printed at end
+✅ demo/run_demo.py — --ab-mode flag; Act 4 "Two Paths" shows both trajectories + contrastive reward
+✅ test_phase10.py — 25 tests, all passing
+✅ Phase 10 gate — PHASE 10 GATE: PASS, delta=-0.078, contrastive reward active
+
 ## Blocked Items
 ❌ GRPOConfig test — blocked by: pyarrow DLL blocked by Windows App Control (works on Linux/Colab)
 ❌ Full GRPO training — blocked by: no local GPU (requires Colab or cloud compute)
